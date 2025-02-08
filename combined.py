@@ -1,14 +1,16 @@
 import pygame
 import random
 import tkinter as tk
+from tkinter import ttk
 from tkinter import scrolledtext
 from tkinter import filedialog as fd
 import time
 import pickle
+import csv
 
 
 class Mouse:
-    def __init__(self, maze, screen, colour=(0, 0, 255), draw_path=False, colour_repeates=False, connect_path=False, move_delay=0.5):
+    def __init__(self, maze, screen, colour=(0, 0, 255), draw_path=False, colour_repeates=False, connect_path=False, move_delay=0.5, use_image=False):
         self.maze = maze
         self.colour = colour
         self.x, self.y = maze.start
@@ -20,40 +22,58 @@ class Mouse:
         self.found_walls = [False, False, False, False]
         self.screen = screen
         self.draw_path = draw_path
+        self.connect_path = connect_path
+        self.colour_repeates = colour_repeates
         self.path = [(self.x, self.y)]
         self.move_delay = move_delay
-        if draw_path:
-            self.colour_repeates = colour_repeates
-            self.connect_path = connect_path
-        else:
-            self.colour_repeates = False
-            self.connect_path = False
+        self.use_image = use_image  # Toggle for using an image
+        self.image = pygame.image.load("Assets/mouse.png")
+        if self.image:
+            self.image = pygame.transform.scale(self.image, (self.cell_size, self.cell_size))  # Resize
 
     def draw(self):
+        print(self.use_image)
         if self.draw_path:
             self.draw_route()
+        
         center_x = self.x * self.cell_size + self.cell_size // 2
         center_y = self.y * self.cell_size + self.cell_size // 2
-        pygame.draw.circle(self.screen, self.colour, (center_x, center_y), self.radius)
 
-        if self.direction == "up":
-            arrow_points = [(center_x, center_y - self.radius),
-                            (center_x - self.radius // 2, center_y + self.radius // 2),
-                            (center_x + self.radius // 2, center_y + self.radius // 2)]
-        elif self.direction == "down":
-            arrow_points = [(center_x, center_y + self.radius),
-                            (center_x - self.radius // 2, center_y - self.radius // 2),
-                            (center_x + self.radius // 2, center_y - self.radius // 2)]
-        elif self.direction == "left":
-            arrow_points = [(center_x - self.radius, center_y),
-                            (center_x + self.radius // 2, center_y - self.radius // 2),
-                            (center_x + self.radius // 2, center_y + self.radius // 2)]
-        elif self.direction == "right":
-            arrow_points = [(center_x + self.radius, center_y),
-                            (center_x - self.radius // 2, center_y - self.radius // 2),
-                            (center_x - self.radius // 2, center_y + self.radius // 2)]
+        if self.use_image and self.image:
+            # Define rotation angles based on direction
+            rotation_angles = {
+                "up": 180,
+                "right": 90,
+                "down": 0,
+                "left": -90
+            }
+            angle = rotation_angles.get(self.direction, 0)
+            rotated_image = pygame.transform.rotate(self.image, angle)
+            image_rect = rotated_image.get_rect(center=(center_x, center_y))
+            self.screen.blit(rotated_image, image_rect.topleft)
 
-        pygame.draw.polygon(self.screen, (255, 255, 255), arrow_points)
+        else:
+            # Default arrow indicator
+            pygame.draw.circle(self.screen, self.colour, (center_x, center_y), self.radius)
+
+            if self.direction == "up":
+                arrow_points = [(center_x, center_y - self.radius),
+                                (center_x - self.radius // 2, center_y + self.radius // 2),
+                                (center_x + self.radius // 2, center_y + self.radius // 2)]
+            elif self.direction == "down":
+                arrow_points = [(center_x, center_y + self.radius),
+                                (center_x - self.radius // 2, center_y - self.radius // 2),
+                                (center_x + self.radius // 2, center_y - self.radius // 2)]
+            elif self.direction == "left":
+                arrow_points = [(center_x - self.radius, center_y),
+                                (center_x + self.radius // 2, center_y - self.radius // 2),
+                                (center_x + self.radius // 2, center_y + self.radius // 2)]
+            elif self.direction == "right":
+                arrow_points = [(center_x + self.radius, center_y),
+                                (center_x - self.radius // 2, center_y - self.radius // 2),
+                                (center_x - self.radius // 2, center_y + self.radius // 2)]
+
+            pygame.draw.polygon(self.screen, (255, 255, 255), arrow_points)
 
     def draw_route(self):
         if self.connect_path:
@@ -170,7 +190,8 @@ class Mouse:
         self.maze.draw()
         self.draw()
         pygame.display.flip()
-        time.sleep(0.5)  # Adjust the delay as needed
+        pygame.time.delay(int(self.move_delay * 1000))  # Converts seconds to milliseconds
+        pygame.event.pump()
 
     def is_solved(self):
         return (self.x, self.y) == self.maze.end
@@ -243,76 +264,227 @@ class MazeGenerator:
         # print("--- Resetting Maze ---")
         self.generate_maze()
 
-def load_code():
-    # Open a popup window to select a file
-    file_path = fd.askopenfilename(filetypes=[("Python Files", "*.py")])
-    if file_path:
-        with open(file_path, "r") as file:
-            code = file.read()
-            code_editor.delete("1.0", tk.END)
-            code_editor.insert(tk.END, code)
+class GUI_Main:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("MicroMouse Learning Tool")
 
-def save_code():
-    # Open a popup window to select a file
-    file_path = fd.asksaveasfilename(filetypes=[("Python Files", "*.py")])
-    if file_path:
-        with open(file_path, "w") as file:
-            code = code_editor.get("1.0", tk.END)
-            file.write(code)
+        # Code editor frame
+        self.code_editor_frame = tk.Frame(self.root)
+        self.code_editor_frame.grid(row=0, column=0, rowspan=10)
 
-def settings():
-    pass
+        # Code Editor
+        self.code_editor = scrolledtext.ScrolledText(self.code_editor_frame, width=70, height=30)
+        self.code_editor.config(font=("TkDefaultFont", 11))
+        self.code_editor.pack()
 
-def generate_maze():
-    maze.reset()
-    mouse.step()
+        # Run Button
+        self.run_button = tk.Button(self.code_editor_frame, text="Run", command=self.run_student_code)
+        self.run_button.pack()
 
-def save_maze():
-    file_path = fd.asksaveasfilename(filetypes=[("Maze Files", "*.maze")])
-    if file_path:
-        with open(file_path, "wb") as file:
-            pickle.dump(maze, file)
-        print(f"Maze saved to {file_path}")
+        # Console Output
+        self.console_output = scrolledtext.ScrolledText(self.code_editor_frame, width=70, height=10)
+        self.console_output.config(font=("TkDefaultFont", 11))
+        self.console_output.pack()
 
-def load_maze():
-    file_path = fd.askopenfilename(filetypes=[("Maze Files", "*.maze")])
-    if file_path:
-        with open(file_path, "rb") as file:
-            global maze
-            maze = pickle.load(file)
+        # Text Frame
+        self.text_frame = tk.Frame(self.root)
+        self.text_frame.grid(row=0, column=1, rowspan=9)
+
+        # Text
+        self.text1 = tk.Text(self.text_frame, width=65, height=10, background="lightgrey")
+        self.text1.tag_configure("bold", font=("TkDefaultFont", 11, "bold"))
+        self.text1.configure(font=("TkDefaultFont", 11))
+        self.text1.insert(tk.END, "Welcome to the MicroMouse Learning Tool\n\n", "bold")
+        self.text1.insert(tk.END, "Instructions:\n", "bold")
+        self.text1.insert(tk.END, "1. Write your code in the code editor in python\n")
+        self.text1.insert(tk.END, "    -> Use the available functions to control the mouse\n")
+        self.text1.insert(tk.END, "2. Click the 'Run' button to execute your code\n")
+        self.text1.insert(tk.END, "3. The mouse will move according to your code\n")
+        self.text1.insert(tk.END, "4. The console output will display any errors\n")
+        self.text1.insert(tk.END, "5. The maze and mouse will reset after each run\n")
+        self.text1.config(state=tk.DISABLED)
+        self.text1.pack()
+
+        self.text2 = tk.Text(self.text_frame, width=65, height=16, background="lightgrey")
+        self.text2.tag_configure("bold", font=("TkDefaultFont", 11, "bold"))
+        self.text2.configure(font=("TkDefaultFont", 11))
+        self.text2.insert(tk.END, "Available Functions:\n", "bold")
+        self.text2.insert(tk.END, "1. ")
+        self.text2.insert(tk.END, "mouse.move_forward():\n", "bold")
+        self.text2.insert(tk.END, "    -> Move the mouse forward\n2.")
+        self.text2.insert(tk.END, " mouse.turn_left():\n", "bold")
+        self.text2.insert(tk.END, "    -> Turn the mouse left\n3. ")
+        self.text2.insert(tk.END, "mouse.turn_right():\n", "bold")
+        self.text2.insert(tk.END, "    -> Turn the mouse right\n4. ")
+        self.text2.insert(tk.END, "mouse.turn_around():\n", "bold")
+        self.text2.insert(tk.END, "    -> Turn the mouse around\n5. ")
+        self.text2.insert(tk.END, "mouse.check_for_walls():\n", "bold")
+        self.text2.insert(tk.END, "    -> Check for walls around the mouse\n")
+        self.text2.insert(tk.END, "    -> Returns a list of booleans from the mouse's perspective\n")
+        self.text2.insert(tk.END, "    -> [left, forward, right]\n")
+        self.text2.insert(tk.END, "    -> True if there is a wall, False if there is no wall\n6. ")
+        self.text2.insert(tk.END, "mouse.is_solved():\n", "bold")
+        self.text2.insert(tk.END, "    -> Check if the mouse has reached the end of the maze\n7. ")
+        self.text2.insert(tk.END, "maze.end:\n", "bold")
+        self.text2.insert(tk.END, "    -> Variable that holds the position of the maze end\n8. ")
+        self.text2.insert(tk.END, "mouse.x & mouse.y:\n", "bold")
+        self.text2.insert(tk.END, "    -> Variables that hold the current position of the mouse\n9. ")
+        self.text2.insert(tk.END, "maze.width & maze.height:\n", "bold")
+        self.text2.insert(tk.END, "    -> Variables that hold the width and height of the maze\n")
+        self.text2.config(state=tk.DISABLED)
+        self.text2.pack()
+
+        self.text3 = tk.Text(self.text_frame, width=65, height=10, background="lightgrey")
+        self.text3.tag_configure("bold", font=("TkDefaultFont", 11, "bold"))
+        self.text3.configure(font=("TkDefaultFont", 11))
+        self.text3.insert(tk.END, "Hints:\n")
+        self.text3.insert(tk.END, "1. Use a while loop to move the mouse until it reaches the end\n")
+        self.text3.config(state=tk.DISABLED)
+        self.text3.pack()
+
+        self.button_frame = tk.Frame(self.root)
+        self.button_frame.grid(row=9, column=1)
+
+        # New Maze Button
+        self.new_maze_button = tk.Button(self.button_frame, text="New Maze", command=self.generate_maze)
+        self.new_maze_button.grid(row=0, column=0)
+
+        # Save Code Button
+        self.save_code_button = tk.Button(self.button_frame, text="Save Code", command=self.save_code)
+        self.save_code_button.grid(row=0, column=1)
+
+        # Load Code Button
+        self.load_code_button = tk.Button(self.button_frame, text="Load Code", command=self.load_code)
+        self.load_code_button.grid(row=0, column=2)
+
+        # Save Maze Button
+        self.save_maze_button = tk.Button(self.button_frame, text="Save Maze", command=self.save_maze)
+        self.save_maze_button.grid(row=0, column=3)
+
+        # Load Maze Button
+        self.load_maze_button = tk.Button(self.button_frame, text="Load Maze", command=self.load_maze)
+        self.load_maze_button.grid(row=0, column=4)
+
+        # Settings Button
+        self.settings_button = tk.Button(self.button_frame, text="Settings", command=self.settings)
+        self.settings_button.grid(row=0, column=5)
+
+        # Exit Button
+        self.exit_button = tk.Button(self.button_frame, text="Exit", command=root.destroy)
+        self.exit_button.grid(row=0, column=6)
+
+    def save_code(self):
+        # Open a popup window to select a file
+        file_path = fd.asksaveasfilename(filetypes=[("Python Files", "*.py")])
+        if file_path:
+            with open(file_path, "w") as file:
+                code = self.code_editor.get("1.0", tk.END)
+                file.write(code)
+
+    def load_code(self):
+        # Open a popup window to select a file
+        file_path = fd.askopenfilename(filetypes=[("Python Files", "*.py")])
+        if file_path:
+            with open(file_path, "r") as file:
+                code = file.read()
+                self.code_editor.delete("1.0", tk.END)
+                self.code_editor.insert(tk.END, code)
+
+    def settings(self):
+        settings_root = tk.Toplevel()
+        gui_settings = GUI_Settings(settings_root)
+
+    def generate_maze(self):
+        maze.reset()
         mouse.step()
-        print(f"Maze loaded from {file_path}")
 
-def run_student_code():
-    global mouse, maze, pygame, time
-    try:
-        root.withdraw()
+    def save_maze(self):
+        file_path = fd.asksaveasfilename(filetypes=[("Maze Files", "*.maze")])
+        if file_path:
+            with open(file_path, "wb") as file:
+                pickle.dump(maze, file)
+            print(f"Maze saved to {file_path}")
 
-        mouse.reset()
+    def load_maze(self):
+        file_path = fd.askopenfilename(filetypes=[("Maze Files", "*.maze")])
+        if file_path:
+            with open(file_path, "rb") as file:
+                global maze
+                maze = pickle.load(file)
+            mouse.step()
+            print(f"Maze loaded from {file_path}")
+
+    def run_student_code(self):
+        global mouse, maze, pygame, time
+        try:
+            root.withdraw()
+
+            mouse.reset()
+            maze.draw()
+            mouse.draw()
+            pygame.display.flip()
+            # Reset the console output
+            self.console_output.delete("1.0", tk.END)
+
+            # Get the student code from the editor
+            student_code = self.code_editor.get("1.0", tk.END)
+
+            # Sandbox for the student code
+            local_scope = {"mouse": mouse, "maze": maze, "pygame": pygame, "time": time}
+            # print("--- Running Code ---")
+            exec(student_code, {}, local_scope)
+            root.wm_deiconify()
+
+            if mouse.is_solved():
+                self.console_output.insert(tk.END, "Maze Solved!\n")
+                self.console_output.insert(tk.END, "The mouse took " + str(len(mouse.path)) + " steps to reach the end\n")
+
+        except Exception as e:
+            root.wm_deiconify()
+            self.console_output.insert(tk.END, f"Error: {str(e)}\n")
+            print(f"Error: {str(e)}")
+
+    # def toggle_mouse_icon(self):
+    #     mouse.use_image = not mouse.use_image
+    #     if mouse.use_image:
+    #         mouse.image = pygame.image.load("Assets/mouse.png")
+    #         mouse.image = pygame.transform.scale(mouse.image, (mouse.cell_size, mouse.cell_size))
+    #     print(f"Mouse icon mode: {'Image' if mouse.use_image else 'Arrow'}")
+
+class GUI_Settings:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Settings")
+        self.root.geometry("300x400")
+
+        self.frame = ttk.Frame(self.root)
+        self.frame.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
+
+        self.check1_var = tk.IntVar(value=int(mouse.use_image))
+        self.check1 = tk.Checkbutton(self.frame, text='Use Image For Mouse?', variable=self.check1_var)
+        self.check1.grid(row=0, column=0)
+
+        self.confirmframe = ttk.Frame(self.root)
+        self.confirmframe.pack()
+
+        self.cancelbutton = tk.Button(self.confirmframe, text="Cancel", command=self.cancel)
+        self.cancelbutton.grid(row=0, column=0)
+
+        self.confirmbutton = tk.Button(self.confirmframe, text="Confirm", command=self.confirm)
+        self.confirmbutton.grid(row=0, column=1)
+
+    def confirm(self):
+        mouse.use_image = bool(self.check1_var.get())
         maze.draw()
         mouse.draw()
         pygame.display.flip()
-        # Reset the console output
-        console_output.delete("1.0", tk.END)
+        time.sleep(0.2)
+        self.root.destroy()
 
-        # Get the student code from the editor
-        student_code = code_editor.get("1.0", tk.END)
-
-        # Sandbox for the student code
-        local_scope = {"mouse": mouse, "maze": maze, "pygame": pygame, "time": time}
-        # print("--- Running Code ---")
-        exec(student_code, {}, local_scope)
-        root.wm_deiconify()
-
-        if mouse.is_solved():
-            console_output.insert(tk.END, "Maze Solved!\n")
-            console_output.insert(tk.END, "The mouse took " + str(len(mouse.path)) + " steps to reach the end\n")
-
-    except Exception as e:
-        root.wm_deiconify()
-        console_output.insert(tk.END, f"Error: {str(e)}\n")
-        print(f"Error: {str(e)}")
-
+    def cancel(self):
+        self.root.destroy()
+        
 pygame.init()
 
 # Maze and Mouse Initialization
@@ -324,124 +496,18 @@ screen_height = height * cell_size + 1
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("Maze Solver")
 
+root = tk.Tk()
+gui = GUI_Main(root)
+
 maze = MazeGenerator(width, height, cell_size, screen)
 maze.generate_maze()
 
-mouse = Mouse(maze, screen, draw_path=True, colour_repeates=True, connect_path=True)
+mouse = Mouse(maze, screen, draw_path=True, colour_repeates=True, connect_path=True, use_image=True)
 
 maze.draw()
 mouse.draw()
 pygame.display.flip()
 time.sleep(0.2)
-
-# Initialize GUI
-root = tk.Tk()
-root.title("MicroMouse Learning Tool")
-
-# Code editor frame
-code_editor_frame = tk.Frame(root)
-code_editor_frame.grid(row=0, column=0, rowspan=10)
-
-# Code Editor
-code_editor = scrolledtext.ScrolledText(code_editor_frame, width=70, height=30)
-code_editor.config(font=("TkDefaultFont", 11))
-code_editor.pack()
-
-# Run Button
-run_button = tk.Button(code_editor_frame, text="Run", command=run_student_code)
-run_button.pack()
-
-# Console Output
-console_output = scrolledtext.ScrolledText(code_editor_frame, width=70, height=10)
-console_output.config(font=("TkDefaultFont", 11))
-console_output.pack()
-
-# Text Frame
-text_frame = tk.Frame(root)
-text_frame.grid(row=0, column=1, rowspan=9)
-
-# Text
-text1 = tk.Text(text_frame, width=65, height=10, background="lightgrey")
-text1.tag_configure("bold", font=("TkDefaultFont", 11, "bold"))
-text1.configure(font=("TkDefaultFont", 11))
-text1.insert(tk.END, "Welcome to the MicroMouse Learning Tool\n\n", "bold")
-text1.insert(tk.END, "Instructions:\n", "bold")
-text1.insert(tk.END, "1. Write your code in the code editor in python\n")
-text1.insert(tk.END, "    -> Use the available functions to control the mouse\n")
-text1.insert(tk.END, "2. Click the 'Run' button to execute your code\n")
-text1.insert(tk.END, "3. The mouse will move according to your code\n")
-text1.insert(tk.END, "4. The console output will display any errors\n")
-text1.insert(tk.END, "5. The maze and mouse will reset after each run\n")
-text1.config(state=tk.DISABLED)
-text1.pack()
-
-text2 = tk.Text(text_frame, width=65, height=16, background="lightgrey")
-text2.tag_configure("bold", font=("TkDefaultFont", 11, "bold"))
-text2.configure(font=("TkDefaultFont", 11))
-text2.insert(tk.END, "Available Functions:\n", "bold")
-text2.insert(tk.END, "1. ")
-text2.insert(tk.END, "mouse.move_forward():\n", "bold")
-text2.insert(tk.END, "    -> Move the mouse forward\n2.")
-text2.insert(tk.END, " mouse.turn_left():\n", "bold")
-text2.insert(tk.END, "    -> Turn the mouse left\n3. ")
-text2.insert(tk.END, "mouse.turn_right():\n", "bold")
-text2.insert(tk.END, "    -> Turn the mouse right\n4. ")
-text2.insert(tk.END, "mouse.turn_around():\n", "bold")
-text2.insert(tk.END, "    -> Turn the mouse around\n5. ")
-text2.insert(tk.END, "mouse.check_for_walls():\n", "bold")
-text2.insert(tk.END, "    -> Check for walls around the mouse\n")
-text2.insert(tk.END, "    -> Returns a list of booleans from the mouse's perspective\n")
-text2.insert(tk.END, "    -> [left, forward, right]\n")
-text2.insert(tk.END, "    -> True if there is a wall, False if there is no wall\n6. ")
-text2.insert(tk.END, "mouse.is_solved():\n", "bold")
-text2.insert(tk.END, "    -> Check if the mouse has reached the end of the maze\n7. ")
-text2.insert(tk.END, "maze.end:\n", "bold")
-text2.insert(tk.END, "    -> Variable that holds the position of the maze end\n8. ")
-text2.insert(tk.END, "mouse.x & mouse.y:\n", "bold")
-text2.insert(tk.END, "    -> Variables that hold the current position of the mouse\n9. ")
-text2.insert(tk.END, "maze.width & maze.height:\n", "bold")
-text2.insert(tk.END, "    -> Variables that hold the width and height of the maze\n")
-text2.config(state=tk.DISABLED)
-text2.pack()
-
-text3 = tk.Text(text_frame, width=65, height=10, background="lightgrey")
-text3.tag_configure("bold", font=("TkDefaultFont", 11, "bold"))
-text3.configure(font=("TkDefaultFont", 11))
-text3.insert(tk.END, "Hints:\n")
-text3.insert(tk.END, "1. Use a while loop to move the mouse until it reaches the end\n")
-text3.config(state=tk.DISABLED)
-text3.pack()
-
-button_frame = tk.Frame(root)
-button_frame.grid(row=9, column=1)
-
-# New Maze Button
-new_maze_button = tk.Button(button_frame, text="New Maze", command=generate_maze)
-new_maze_button.grid(row=0, column=0)
-
-# Save Code Button
-save_code_button = tk.Button(button_frame, text="Save Code", command=save_code)
-save_code_button.grid(row=0, column=1)
-
-# Load Code Button
-load_code_button = tk.Button(button_frame, text="Load Code", command=load_code)
-load_code_button.grid(row=0, column=2)
-
-# Save Maze Button
-save_maze_button = tk.Button(button_frame, text="Save Maze", command=save_maze)
-save_maze_button.grid(row=0, column=3)
-
-# Load Maze Button
-load_maze_button = tk.Button(button_frame, text="Load Maze", command=load_maze)
-load_maze_button.grid(row=0, column=4)
-
-# Settings Button
-settings_button = tk.Button(button_frame, text="Settings", command=settings)
-settings_button.grid(row=0, column=5)
-
-# Exit Button
-exit_button = tk.Button(button_frame, text="Exit", command=root.destroy)
-exit_button.grid(row=0, column=6)
 
 root.mainloop()
 
