@@ -531,7 +531,7 @@ root.iconphoto(False, photo)
 maze = MazeGenerator(width, height, cell_size, screen)
 maze.generate_maze()
 
-mouse = Mouse(maze, screen, draw_path=True, colour_repeates=True, connect_path=True, use_image=True)
+mouse = Mouse(maze, screen, draw_path=True, colour_repeates=True, connect_path=True, use_image=True, image=image)
 
 maze.draw()
 mouse.draw()
