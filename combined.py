@@ -6,11 +6,11 @@ from tkinter import scrolledtext
 from tkinter import filedialog as fd
 import time
 import pickle
-import csv
-
+import os
+import sys
 
 class Mouse:
-    def __init__(self, maze, screen, colour=(0, 0, 255), draw_path=False, colour_repeates=False, connect_path=False, move_delay=0.5, use_image=False):
+    def __init__(self, maze, screen, colour=(0, 0, 255), draw_path=False, colour_repeates=False, connect_path=False, move_delay=0.5, use_image=False, image=None):
         self.maze = maze
         self.colour = colour
         self.x, self.y = maze.start
@@ -27,9 +27,7 @@ class Mouse:
         self.path = [(self.x, self.y)]
         self.move_delay = move_delay
         self.use_image = use_image  # Toggle for using an image
-        self.image = pygame.image.load("Assets/mouse.png")
-        if self.image:
-            self.image = pygame.transform.scale(self.image, (self.cell_size, self.cell_size))  # Resize
+        self.image = image
 
     def draw(self):
         if self.draw_path:
@@ -453,6 +451,7 @@ class GUI_Settings:
         self.root = root
         self.root.title("Settings")
         self.root.geometry("300x400")
+        self.root.iconphoto(False, photo)
 
         self.frame = ttk.Frame(self.root)
         self.frame.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
@@ -497,6 +496,17 @@ class GUI_Settings:
     def cancel(self):
         self.root.destroy()
         
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 pygame.init()
 
 # Maze and Mouse Initialization
@@ -505,11 +515,18 @@ cell_size = 50
 screen_width = width * cell_size + 1
 screen_height = height * cell_size + 1
 
+image = pygame.image.load(resource_path("Assets/mouse.png"))
+if image:
+    image = pygame.transform.scale(image, (cell_size, cell_size))
+pygame.display.set_icon(image)
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("Maze Solver")
 
 root = tk.Tk()
 gui = GUI_Main(root)
+
+photo = tk.PhotoImage(file=resource_path("Assets/mouse.png"))
+root.iconphoto(False, photo)
 
 maze = MazeGenerator(width, height, cell_size, screen)
 maze.generate_maze()

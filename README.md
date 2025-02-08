@@ -1,6 +1,6 @@
 # Micromouse Simulator
 
-![](Assets/Example.png)
+![](Readme_Images/Example.png)
 
 ## Intro
 
