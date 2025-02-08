@@ -32,7 +32,6 @@ class Mouse:
             self.image = pygame.transform.scale(self.image, (self.cell_size, self.cell_size))  # Resize
 
     def draw(self):
-        print(self.use_image)
         if self.draw_path:
             self.draw_route()
         
@@ -136,13 +135,6 @@ class Mouse:
                 movement_checker[i] = "left"
             elif movement_checker[i] == "right":
                 movement_checker[i] = "right"
-
-        # print(f"Current position: ({x}, {y})")
-        # print(f"Current direction: {self.directions[self.current_direction]}")
-        # print(f"Left wall: {movement_checker[0]}")
-        # print(f"Forward wall: {movement_checker[1]}")
-        # print(f"Right wall: {movement_checker[2]}")
-        # print(f"Grid status: {self.maze.grid[y][x]}")
 
         if movement_checker[0] in self.maze.grid[y][x]:
             self.found_walls[0] = True
@@ -398,6 +390,10 @@ class GUI_Main:
     def generate_maze(self):
         maze.reset()
         mouse.step()
+        maze.draw()
+        mouse.draw()
+        pygame.display.flip()
+        time.sleep(0.2)
 
     def save_maze(self):
         file_path = fd.asksaveasfilename(filetypes=[("Maze Files", "*.maze")])
@@ -461,9 +457,23 @@ class GUI_Settings:
         self.frame = ttk.Frame(self.root)
         self.frame.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
 
-        self.check1_var = tk.IntVar(value=int(mouse.use_image))
-        self.check1 = tk.Checkbutton(self.frame, text='Use Image For Mouse?', variable=self.check1_var)
-        self.check1.grid(row=0, column=0)
+        self.mouse_settings = tk.Label(self.frame, text="--- Mouse Settings ---", font='Helvetica 18 bold')
+        self.mouse_settings.grid(row=0, column=0, columnspan=3)
+
+        self.use_image_setting_var = tk.IntVar(value=int(mouse.use_image))
+        self.use_image_checkbox = tk.Checkbutton(self.frame, text='Use Image For Mouse?', variable=self.use_image_setting_var)
+        self.use_image_checkbox.grid(row=1, column=0, columnspan=3)
+
+        self.draw_path_setting_var = tk.IntVar(value=int(mouse.draw_path))
+        self.draw_path_checkbox = tk.Checkbutton(self.frame, text='Draw Path?', variable=self.draw_path_setting_var)
+        self.draw_path_checkbox.grid(row=2, column=0, columnspan=3)
+
+        self.time_delay_text = tk.Label(self.frame, text="Time Delay Between Actions:")
+        self.time_delay_text.grid(row=3, column=0)
+        self.time_delay_spinbox = tk.Spinbox(self.frame, increment=0.1, from_=0.1, to=10, width=10)
+        self.time_delay_spinbox.grid(row=3, column=1)
+        self.time_delay_unit = tk.Label(self.frame, text="Seconds")
+        self.time_delay_unit.grid(row=3, column=2)
 
         self.confirmframe = ttk.Frame(self.root)
         self.confirmframe.pack()
@@ -475,7 +485,9 @@ class GUI_Settings:
         self.confirmbutton.grid(row=0, column=1)
 
     def confirm(self):
-        mouse.use_image = bool(self.check1_var.get())
+        mouse.use_image = bool(self.use_image_setting_var.get())
+        mouse.draw_path = bool(self.draw_path_setting_var.get())
+        mouse.move_delay = float(self.time_delay_spinbox.get())
         maze.draw()
         mouse.draw()
         pygame.display.flip()
