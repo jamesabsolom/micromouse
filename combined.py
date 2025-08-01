@@ -186,244 +186,7 @@ class MouseSimple:
 
     def is_solved(self):
         return (self.x, self.y) == self.maze.end
-
-class MouseComplex:
-    def __init__(self, maze, screen, colour=(0, 0, 255), move_delay=0.1, speed=2, rotation_speed=5, detection_range_right=30, detection_range_left=30, detection_range_front=30, show_detection=True):
-        self.maze = maze
-        self.screen = screen
-        self.colour = colour
-        self.x = 0
-        self.y = 0
-        self.radius = maze.cell_size // 4
-        self.speed = speed  # Movement speed per frame
-        self.rotation_speed = rotation_speed  # How fast the mouse turns
-        self.angle = 0  # Facing up
-        self.path = [(self.x, self.y)]
-        self.found_walls = [False, False, False]
-        self.show_detection = show_detection
-        self.move_delay = move_delay
-
-        if maze.start[0] != 0:
-            self.x = maze.start[0] * (maze.cell_size/2)
-        else:
-            self.x = (maze.cell_size/2)
-        
-        if maze.start[1] != 0:
-            self.y = maze.start[1] * (maze.cell_size/2)
-        else:
-            self.y = (maze.cell_size/2)
-
-        # Detection ranges
-        self.detection_range_right = detection_range_right
-        self.detection_range_left = detection_range_left
-        self.detection_range_front = detection_range_front
-
-    def move_forward(self):
-        """ Move in the direction of the current angle """
-        new_x = self.x + math.cos(math.radians(self.angle)) * self.speed
-        new_y = self.y - math.sin(math.radians(self.angle)) * self.speed  # Invert Y-axis
-
-        if not self.check_collision(new_x, new_y):
-            self.x, self.y = new_x, new_y
-            self.path.append((self.x, self.y))
-        
-        self.step()
-
-    def turn_left(self):
-        """ Rotate counterclockwise """
-        self.angle = (self.angle + self.rotation_speed) % 360
-
-    def turn_right(self):
-        """ Rotate clockwise """
-        self.angle = (self.angle - self.rotation_speed) % 360
-
-    def check_collision(self, new_x, new_y):
-        """ Check if the next position collides with a maze wall """
-        for y, row in enumerate(self.maze.grid):
-            for x, walls in enumerate(row):
-                cell_x, cell_y = x * self.maze.cell_size, y * self.maze.cell_size
-                if "top" in walls and self.line_circle_collision((cell_x, cell_y), (cell_x + self.maze.cell_size, cell_y), (new_x, new_y), self.radius):
-                    return True
-                if "bottom" in walls and self.line_circle_collision((cell_x, cell_y + self.maze.cell_size), (cell_x + self.maze.cell_size, cell_y + self.maze.cell_size), (new_x, new_y), self.radius):
-                    return True
-                if "left" in walls and self.line_circle_collision((cell_x, cell_y), (cell_x, cell_y + self.maze.cell_size), (new_x, new_y), self.radius):
-                    return True
-                if "right" in walls and self.line_circle_collision((cell_x + self.maze.cell_size, cell_y), (cell_x + self.maze.cell_size, cell_y + self.maze.cell_size), (new_x, new_y), self.radius):
-                    return True
-        return False
     
-    def line_circle_collision(self, p1, p2, circle, r):
-        """ Check if a line (p1, p2) intersects with a circle (circle, r) """
-        x1, y1 = p1
-        x2, y2 = p2
-        cx, cy = circle
-
-        # Line equation components
-        dx = x2 - x1
-        dy = y2 - y1
-        fx = x1 - cx
-        fy = y1 - cy
-
-        a = dx**2 + dy**2
-        b = 2 * (fx * dx + fy * dy)
-        c = (fx**2 + fy**2) - r**2
-
-        discriminant = b**2 - 4 * a * c
-        if discriminant >= 0:
-            discriminant = math.sqrt(discriminant)
-            t1 = (-b - discriminant) / (2 * a)
-            t2 = (-b + discriminant) / (2 * a)
-            if 0 <= t1 <= 1 or 0 <= t2 <= 1:
-                return True
-        return False
-
-    def draw(self):
-        """ Draw the mouse with rotation """
-        center = (int(self.x), int(self.y))
-        pygame.draw.circle(self.screen, self.colour, center, self.radius)
-
-        # Draw direction arrow
-        arrow_length = self.radius * 2
-        arrow_x = self.x + math.cos(math.radians(self.angle)) * arrow_length
-        arrow_y = self.y - math.sin(math.radians(self.angle)) * arrow_length
-        pygame.draw.line(self.screen, (255, 255, 255), center, (int(arrow_x), int(arrow_y)), 2)    
-
-        if self.show_detection:
-            self.draw_detection_lines()
-
-    def check_for_walls(self):
-        x, y = self.x, self.y
-        self.found_walls = [False, False, False]  # 0 = left, 1 = forward, 2 = right
-
-        directions = {
-            0: -(self.angle + 90),   # Left
-            1: -(self.angle),        # Forward
-            2: -(self.angle - 90)    # Right
-        }
-
-        detection_ranges = {
-            0: self.detection_range_left,
-            1: self.detection_range_front,
-            2: self.detection_range_right
-        }
-
-        for i in range(3):  # Check left, forward, and right
-            rad = math.radians(directions[i])
-            dx = math.cos(rad)
-            dy = -math.sin(rad)  # Inverted Y-axis in Pygame
-
-            end_x = x + dx * detection_ranges[i]
-            end_y = y + dy * detection_ranges[i]
-
-            for row_idx, row in enumerate(self.maze.grid):
-                for col_idx, walls in enumerate(row):
-                    cell_x, cell_y = col_idx * self.maze.cell_size, row_idx * self.maze.cell_size
-
-                    if "top" in walls and self.line_intersection((cell_x, cell_y), (cell_x + self.maze.cell_size, cell_y), (x, y), directions[i], detection_ranges[i]):
-                        self.found_walls[i] = True
-                    if "bottom" in walls and self.line_intersection((cell_x, cell_y + self.maze.cell_size), (cell_x + self.maze.cell_size, cell_y + self.maze.cell_size), (x, y), directions[i], detection_ranges[i]):
-                        self.found_walls[i] = True
-                    if "left" in walls and self.line_intersection((cell_x, cell_y), (cell_x, cell_y + self.maze.cell_size), (x, y), directions[i], detection_ranges[i]):
-                        self.found_walls[i] = True
-                    if "right" in walls and self.line_intersection((cell_x + self.maze.cell_size, cell_y), (cell_x + self.maze.cell_size, cell_y + self.maze.cell_size), (x, y), directions[i], detection_ranges[i]):
-                        self.found_walls[i] = True
-
-        return self.found_walls
-
-    def line_intersection(self, p1, p2, ray_start, angle, length):
-        # Convert angle to radians
-        angle_rad = math.radians(angle)
-        
-        # Compute the end point of the ray
-        ray_end = (ray_start[0] + length * math.cos(angle_rad), 
-                ray_start[1] + length * math.sin(angle_rad))       
-        
-        # Unpack coordinates
-        x1, y1 = p1
-        x2, y2 = p2
-        rx1, ry1 = ray_start
-        rx2, ry2 = ray_end
-
-        # Compute determinants
-        det = (x1 - x2) * (ry1 - ry2) - (y1 - y2) * (rx1 - rx2)
-
-        if det == 0:
-            return None  # Parallel lines
-
-        # Find intersection using determinant formula
-        t = ((x1 - rx1) * (ry1 - ry2) - (y1 - ry1) * (rx1 - rx2)) / det
-        u = ((x1 - rx1) * (y1 - y2) - (y1 - ry1) * (x1 - x2)) / det
-
-        # Check if the intersection is within the line segment and ray length
-        if 0 <= t <= 1 and 0 <= u <= 1:
-            # Calculate intersection point
-            return True
-
-        return False  # No valid intersection
-
-    def draw_detection_lines(self):
-        """Draws visual detection lines based on check_for_walls() results."""
-        detection_ranges = {
-            "front": self.detection_range_front,
-            "right": self.detection_range_right,
-            "left": self.detection_range_left
-        }
-
-        directions = {
-            "front": -(self.angle),
-            "right": -(self.angle - 90),
-            "left": -(self.angle + 90)
-        }
-
-        values = {
-            "front": self.found_walls[1],
-            "right": self.found_walls[2],
-            "left": self.found_walls[0]
-        }
-
-        for direction, angle in directions.items():
-            rad = math.radians(angle)
-            dx = math.cos(rad)
-            dy = math.sin(rad)
-
-            end_x = self.x + dx * detection_ranges[direction]
-            end_y = self.y + dy * detection_ranges[direction]
-
-            color = (255, 0, 0) if values[direction] else (0, 255, 0)  # Red = detected, Green = clear
-            pygame.draw.line(self.screen, color, (self.x, self.y), (end_x, end_y), 2)
-
-    def reset(self):
-        # print("--- Resetting Mouse ---")
-        if maze.start[0] != 0:
-            self.x = maze.start[0] * (maze.cell_size/2)
-        else:
-            self.x = (maze.cell_size/2)
-        
-        if maze.start[1] != 0:
-            self.y = maze.start[1] * (maze.cell_size/2)
-        else:
-            self.y = (maze.cell_size/2)
-        self.angle = 0
-        self.path = [(self.x, self.y)]
-        self.found_walls = [False, False, False]
-
-    def step(self, delay=0.5):
-        self.screen.fill((0, 0, 0))
-        self.maze.draw()
-        self.draw()
-        pygame.display.flip()
-        pygame.time.delay(int(self.move_delay * 1000))  # Converts seconds to milliseconds
-        pygame.event.pump()
-
-    def is_solved(self):
-        endx = self.maze.end[0]*maze.cell_size
-        endy = self.maze.end[1]*maze.cell_size
-        if (self.x > endx) and (self.x < (endx + maze.cell_size)): 
-            if (self.y > endy) and (self.y < (endy + maze.cell_size)):
-                return True
-            
-        return False
-
 class MazeGenerator:
     def __init__(self, width, height, cell_size, screen, seed=None):
         self.width = width
@@ -491,6 +254,169 @@ class MazeGenerator:
     def reset(self):
         # print("--- Resetting Maze ---")
         self.generate_maze()
+
+class MouseComplex:
+    def __init__(self, maze, screen, config=None, colour=(0, 0, 255), move_delay=0.1):
+        self.maze = maze
+        self.screen = screen
+        self.colour = colour
+        self.move_delay = move_delay
+        self.angle = 0  # Facing up
+        self.x = maze.start[0] * maze.cell_size + maze.cell_size // 2
+        self.y = maze.start[1] * maze.cell_size + maze.cell_size // 2
+        self.path = [(self.x, self.y)]
+
+        if config is None:
+            self.shapes = [{"type": "circle", "x": 0, "y": 0, "radius": maze.cell_size // 4}]
+            self.sensors = []
+        else:
+            self.shapes = config.get("shapes", [])
+            self.sensors = config.get("sensors", [])
+
+    def transform_local_to_world(self, local_x, local_y, angle_offset=0):
+        total_angle = math.radians(self.angle + angle_offset)
+        rotated_x = local_x * math.cos(total_angle) - local_y * math.sin(total_angle)
+        rotated_y = local_x * math.sin(total_angle) + local_y * math.cos(total_angle)
+        return self.x + rotated_x, self.y + rotated_y
+
+    def move_forward(self, speed=2):
+        dx = math.cos(math.radians(self.angle)) * speed
+        dy = -math.sin(math.radians(self.angle)) * speed
+        new_x = self.x + dx
+        new_y = self.y - dy
+
+        if not self.check_collision(new_x, new_y):
+            self.x = new_x
+            self.y = new_y
+            self.path.append((self.x, self.y))
+
+        self.step()
+
+    def turn_left(self, deg=5):
+        self.angle = (self.angle + deg) % 360
+        self.step()
+
+    def turn_right(self, deg=5):
+        self.angle = (self.angle - deg) % 360
+        self.step()
+
+    def step(self):
+        self.screen.fill((0, 0, 0))
+        self.maze.draw()
+        self.draw()
+        pygame.display.flip()
+        pygame.time.delay(int(self.move_delay * 1000))
+        pygame.event.pump()
+
+    def draw(self):
+        for shape in self.shapes:
+            center = self.transform_local_to_world(shape["x"], shape["y"])
+            if shape["type"] == "circle":
+                pygame.draw.circle(self.screen, self.colour, (int(center[0]), int(center[1])), int(shape["radius"]))
+            elif shape["type"] == "rect":
+                w, h = shape["width"], shape["height"]
+                surf = pygame.Surface((w, h), pygame.SRCALPHA)
+                surf.fill(self.colour)
+                rotated = pygame.transform.rotate(surf, -(self.angle + shape.get("rotation", 0)))
+                self.screen.blit(rotated, rotated.get_rect(center=center))
+
+        for sensor in self.sensors:
+            start = self.transform_local_to_world(sensor["x"], sensor["y"])
+            angle_deg = -self.angle + sensor["angle"]
+            angle_rad = math.radians(angle_deg)
+            dx = math.cos(angle_rad) * sensor["range"]
+            dy = -math.sin(angle_rad) * sensor["range"]
+            end = (start[0] + dx, start[1] + dy)
+
+            hit = self.read_sensor(sensor["name"])
+            color = (255, 0, 0) if hit else (0, 255, 0)
+
+            pygame.draw.line(self.screen, color, start, end, 2)
+            if sensor.get("cone"):
+                cone_rad = math.radians(sensor["cone"] / 2)
+                left = math.radians(angle_deg) - cone_rad
+                right = math.radians(angle_deg) + cone_rad
+                left_end = (start[0] + math.cos(left)*sensor["range"], start[1] - math.sin(left)*sensor["range"])
+                right_end = (start[0] + math.cos(right)*sensor["range"], start[1] - math.sin(right)*sensor["range"])
+                pygame.draw.polygon(self.screen, color, [start, left_end, right_end], 1)
+
+    def check_collision(self, new_x, new_y):
+        for shape in self.shapes:
+            sx, sy = self.transform_local_to_world(shape["x"], shape["y"])
+            offset_x = new_x - self.x
+            offset_y = new_y - self.y
+            sx += offset_x
+            sy += offset_y
+            radius = shape.get("radius", 5)
+
+            for row_idx, row in enumerate(self.maze.grid):
+                for col_idx, walls in enumerate(row):
+                    cx = col_idx * self.maze.cell_size
+                    cy = row_idx * self.maze.cell_size
+                    if "top" in walls and self.line_circle_collision((cx, cy), (cx + self.maze.cell_size, cy), (sx, sy), radius):
+                        return True
+                    if "bottom" in walls and self.line_circle_collision((cx, cy + self.maze.cell_size), (cx + self.maze.cell_size, cy + self.maze.cell_size), (sx, sy), radius):
+                        return True
+                    if "left" in walls and self.line_circle_collision((cx, cy), (cx, cy + self.maze.cell_size), (sx, sy), radius):
+                        return True
+                    if "right" in walls and self.line_circle_collision((cx + self.maze.cell_size, cy), (cx + self.maze.cell_size, cy + self.maze.cell_size), (sx, sy), radius):
+                        return True
+        return False
+
+    def line_circle_collision(self, p1, p2, circle, r):
+        x1, y1 = p1
+        x2, y2 = p2
+        cx, cy = circle
+
+        dx = x2 - x1
+        dy = y2 - y1
+        fx = x1 - cx
+        fy = y1 - cy
+
+        a = dx**2 + dy**2
+        b = 2 * (fx * dx + fy * dy)
+        c = (fx**2 + fy**2) - r**2
+
+        discriminant = b**2 - 4 * a * c
+        if discriminant >= 0:
+            discriminant = math.sqrt(discriminant)
+            t1 = (-b - discriminant) / (2 * a)
+            t2 = (-b + discriminant) / (2 * a)
+            if 0 <= t1 <= 1 or 0 <= t2 <= 1:
+                return True
+        return False
+
+    def read_sensor(self, name):
+        sensor = next((s for s in self.sensors if s["name"] == name), None)
+        if not sensor:
+            return False
+
+        start_x, start_y = self.transform_local_to_world(sensor["x"], sensor["y"])
+
+        if sensor["type"] == "bumper":
+            return self.check_collision(start_x, start_y)
+
+        elif sensor["type"] == "proximity":
+            angle = math.radians(self.angle + sensor["angle"])
+            dx = math.cos(angle)
+            dy = -math.sin(angle)
+            for dist in range(sensor["range"]):
+                px = start_x + dx * dist
+                py = start_y + dy * dist
+                if self.check_collision(px, py):
+                    return True
+        return False
+
+    def is_solved(self):
+        endx = self.maze.end[0] * self.maze.cell_size
+        endy = self.maze.end[1] * self.maze.cell_size
+        return (endx <= self.x <= endx + self.maze.cell_size) and (endy <= self.y <= endy + self.maze.cell_size)
+
+    def reset(self):
+        self.x = self.maze.start[0] * self.maze.cell_size + self.maze.cell_size // 2
+        self.y = self.maze.start[1] * self.maze.cell_size + self.maze.cell_size // 2
+        self.angle = 0
+        self.path = [(self.x, self.y)]
 
 class GUI_Main:
     def __init__(self, root):
@@ -758,7 +684,7 @@ cell_size = 50
 screen_width = width * cell_size + 1
 screen_height = height * cell_size + 1
 # Mouse mode variable 0 = simple 1 = complex
-mouse_mode = False
+mouse_mode = True
 
 image = pygame.image.load(resource_path("Assets/mouse.png"))
 if image:
@@ -776,7 +702,19 @@ root.iconphoto(False, photo)
 maze = MazeGenerator(width, height, cell_size, screen)
 maze.generate_maze()
 
-mouse = MouseSimple(maze, screen, draw_path=True, colour_repeates=True, connect_path=True, use_image=True, image=image)
+custom_mouse_config = {
+    "shapes": [
+        {"type": "circle", "x": 0, "y": 0, "radius": 15},
+        {"type": "rect", "x": -10, "y": 0, "width": 15, "height": 30, "rotation": 0}
+    ],
+    "sensors": [
+        {"name": "Front Prox", "type": "proximity", "x": 10, "y": 0, "angle": 0, "range": 10, "cone": 10},
+        {"name": "Left Prox", "type": "proximity", "x": 0, "y": -10, "angle": 90, "range": 10, "cone": 10},
+        {"name": "Right Prox", "type": "proximity", "x": 0, "y": 10, "angle": -90, "range": 10, "cone": 10},
+    ]
+}
+
+mouse = MouseComplex(maze, screen, config=custom_mouse_config)
 
 maze.draw()
 mouse.draw()
