@@ -3,6 +3,8 @@ extends Node
 
 class_name MouseInterpreter
 
+signal line_changed(line_number: int)
+signal finished
 var command_queue: Array = []
 var running := false
 var mouse: Node = null
@@ -12,6 +14,7 @@ var stop_flag := false
 func stop():
 	running = false
 	stop_flag = true
+	emit_signal("finished")
 
 func run_script(script_text: String, mouse_ref: Node):
 	mouse = mouse_ref
@@ -28,11 +31,12 @@ func parse_script(script: String) -> Array:
 	var tokens := []
 	var stack := []
 
-	for line in lines:
-		line = line.strip_edges().to_upper()
+	for i in lines.size():
+		var raw_line = lines[i]
+		var line = raw_line.strip_edges().to_upper()
 		if line == "" or line.begins_with("#"):
 			continue
-
+		
 		match line:
 			"LOOP":
 				var loop_block := {"action": "loop", "body": []}
@@ -44,11 +48,11 @@ func parse_script(script: String) -> Array:
 				else:
 					_append_command(stack, finished)
 			"MOVE":
-				_append_command(stack, {"action": "move"})
+				_append_command(stack, {"action": "move", "line": i})
 			"LEFT":
-				_append_command(stack, {"action": "left"})
+				_append_command(stack, {"action": "left", "line": i})
 			"RIGHT":
-				_append_command(stack, {"action": "right"})
+				_append_command(stack, {"action": "right", "line": i})
 			"ENDREPEAT":
 				var finished = stack.pop_back()
 				if stack.is_empty():
@@ -100,6 +104,7 @@ func _append_command(stack: Array, cmd: Dictionary):
 
 func _run_command_list(commands: Array) -> void:
 	for cmd in commands:
+		emit_signal("line_changed", cmd.get("line", -1))
 		if stop_flag:
 			push_warning("Execution stopped manually.")
 			return
@@ -134,4 +139,9 @@ func _run_command_list(commands: Array) -> void:
 				else:
 					await _run_command_list(cmd.get("else_body", []))
 
-		await get_tree().create_timer(mouse.move_delay).timeout
+		if cmd["action"] == "left" or cmd["action"] == "right":
+			await get_tree().create_timer(mouse.turn_delay).timeout
+		else:
+			await get_tree().create_timer(mouse.move_delay).timeout
+	if not stop_flag:
+		emit_signal("finished")

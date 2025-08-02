@@ -82,12 +82,12 @@ shape = SubResource("RectangleShape2D_ouscy")
 
 [node name="FrontProx" type="RayCast2D" parent="."]
 position = Vector2(10, 0)
-target_position = Vector2(15, 0)
+target_position = Vector2(20, 0)
 
 [node name="RightProx" type="RayCast2D" parent="."]
 position = Vector2(0, 10)
-target_position = Vector2(0, 15)
+target_position = Vector2(0, 20)
 
 [node name="LeftProx" type="RayCast2D" parent="."]
 position = Vector2(0, -10)
-target_position = Vector2(0, -15)
+target_position = Vector2(0, -20)
