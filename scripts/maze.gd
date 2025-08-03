@@ -8,10 +8,21 @@ var grid = []
 var start = Vector2(0, 0)
 var end = Vector2(WIDTH - 1, HEIGHT - 1)
 
+@onready var goal = $Goal
+
 func _ready():
 	generate_maze()
 	queue_redraw()
+	var goal_pos = end * CELL_SIZE + Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
+	goal.global_position = goal_pos
 
+	# Resize the collision shape to fit within the goal cell
+	var shape = goal.get_node("CollisionShape2D").shape
+	if shape is CircleShape2D:
+		shape.radius = CELL_SIZE / 3
+	elif shape is RectangleShape2D:
+		shape.extents = Vector2(CELL_SIZE / 3, CELL_SIZE / 3)
+		
 func generate_maze():
 	grid = []
 	for y in HEIGHT:
@@ -107,3 +118,7 @@ func draw_maze():
 	draw_circle(start_pos, 10, Color.GREEN)
 	draw_circle(end_pos, 10, Color.RED)
 	
+func _on_Goal_body_entered(body):
+	if body.name == "Mouse":
+		print("🎉 Robot reached the goal!")
+		body.get_parent().interpreter.stop()  # Or call from scene root/UI	

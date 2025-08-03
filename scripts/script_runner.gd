@@ -36,10 +36,11 @@ func _on_line_changed(line_num: int):
 	if last_highlighted_line >= 0:
 		code_editor.set_line_background_color(last_highlighted_line, Color(0, 0, 0, 0))  # Clear previous
 
-	code_editor.set_line_background_color(line_num, Color(0.2, 0.6, 1.0, 0.3))  # Highlight current
-	code_editor.set_caret_line(line_num)
-	code_editor.set_v_scroll(line_num)
-	last_highlighted_line = line_num
+	if line_num > -1:
+		code_editor.set_line_background_color(line_num, Color(0.2, 0.6, 1.0, 0.3))  # Highlight current
+		code_editor.set_caret_line(line_num)
+		code_editor.set_v_scroll(line_num)
+		last_highlighted_line = line_num
 	
 func _on_execution_finished():
 	if last_highlighted_line >= 0:

@@ -109,7 +109,8 @@ func _run_command_list(commands: Array) -> void:
 			push_warning("Execution stopped manually.")
 			return
 
-		print_debug("Running command:", cmd)
+		if Globals.interpreter_debug_enabled:
+			print_debug("Running command:", cmd)
 
 		match cmd["action"]:
 			"move":
@@ -139,9 +140,11 @@ func _run_command_list(commands: Array) -> void:
 				else:
 					await _run_command_list(cmd.get("else_body", []))
 
-		if cmd["action"] == "left" or cmd["action"] == "right":
-			await get_tree().create_timer(mouse.turn_delay).timeout
+		if cmd["action"] == "LEFT" or cmd["action"] == "RIGHT":
+			await get_tree().create_timer(Globals.turn_delay).timeout
+		elif "REPEAT" in cmd["action"]:
+			await get_tree().create_timer(Globals.repeat_delay).timeout
 		else:
-			await get_tree().create_timer(mouse.move_delay).timeout
+			await get_tree().create_timer(Globals.move_delay).timeout
 	if not stop_flag:
 		emit_signal("finished")

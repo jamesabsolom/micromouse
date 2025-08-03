@@ -1,0 +1,11 @@
+extends Node
+
+## DEBUG SETTINGS ##
+var interpreter_debug_enabled := false
+var debug_enabled := false
+
+## MOUSE SETTINGS ##
+var move_speed := 2
+var move_delay := 0.01
+var turn_delay := 0.01
+var repeat_delay := 0

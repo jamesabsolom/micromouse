@@ -1,17 +1,18 @@
 extends CharacterBody2D
 
-@export var move_speed := 10
-@export var rotation_speed := 90
-@export var move_delay := 0.1  # seconds
-@export var turn_delay := 0.01 # seconds
+@export var move_speed := 0
 
 var start_position: Vector2
 var start_rotation: float
 
 func _ready():
-	print("mouse comms setup")
+	move_speed = Globals.move_speed
 	start_position = position
 	start_rotation = rotation
+	if Globals.debug_enabled:
+		print("HELLO FROM THE MOUSE")
+		print("THE MOUSE KNOWS WHERE IT IS")
+		print("THE MOUSE IS AT", start_position)
 
 func move_forward():
 	var direction = Vector2.RIGHT.rotated(rotation)
