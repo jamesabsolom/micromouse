@@ -16,9 +16,12 @@ func stop():
 	stop_flag = true
 	emit_signal("finished")
 
-func run_script(script_text: String, mouse_ref: Node):
+func run_script(script_text: String, mouse_ref: Node):#
 	mouse = mouse_ref
 	command_queue = parse_script(script_text)
+	print("=== PARSE TREE ===")
+	dump_commands(command_queue)
+	print("=== END PARSE TREE ===")
 	if command_queue.is_empty():
 		push_error("No commands to run.")
 		return
@@ -28,79 +31,89 @@ func run_script(script_text: String, mouse_ref: Node):
 
 func parse_script(script: String) -> Array:
 	var lines = script.split("\n", false)
-	var tokens := []
-	var stack := []
-
-	for i in lines.size():
-		var raw_line = lines[i]
-		var line = raw_line.strip_edges().to_upper()
-		if line == "" or line.begins_with("#"):
+	var root_commands: Array = []
+	var stack: Array = []
+	for i in range(lines.size()):
+		var raw_line: String = lines[i]
+		# → DEBUG: show raw content and computed indent
+		var indent := 0
+		var rest := raw_line
+		while rest.begins_with("\t") or rest.begins_with("    "):
+			if rest.begins_with("\t"):
+				indent += 1
+				rest = rest.substr(1)
+			else:
+				indent += 1
+				rest = rest.substr(4)
+		var trimmed := rest.strip_edges()
+		print("DEBUG parse: line %d → indent=%d, trimmed=\"%s\"" % [i+1, indent, trimmed])
+		if trimmed == "" or trimmed.begins_with("#"):
 			continue
-		
-		match line:
-			"LOOP":
-				var loop_block := {"action": "loop", "body": []}
-				stack.append(loop_block)
-			"ENDLOOP":
-				var finished = stack.pop_back()
-				if stack.is_empty():
-					tokens.append(finished)
-				else:
-					_append_command(stack, finished)
-			"MOVE":
-				_append_command(stack, {"action": "move", "line": i})
-			"LEFT":
-				_append_command(stack, {"action": "left", "line": i})
-			"RIGHT":
-				_append_command(stack, {"action": "right", "line": i})
-			"ENDREPEAT":
-				var finished = stack.pop_back()
-				if stack.is_empty():
-					tokens.append(finished)
-				else:
-					_append_command(stack, finished)
-			_:
-				if line.begins_with("REPEAT"):
-					var count = int(line.substr(6).strip_edges())
-					var repeat_block := {"action": "repeat", "count": count, "body": []}
-					stack.append(repeat_block)
-				elif line.begins_with("IF SENSOR"):
-					var name = line.substr(10).strip_edges()
-					var cond = {"action": "if", "condition": name, "body": [], "else_body": []}
-					stack.append(cond)
-				elif line == "ELSE":
-					var if_block = stack.pop_back()
-					if if_block["action"] != "if":
-						push_error("ELSE without matching IF")
-						return []
-					stack.append(if_block)
-					stack.append({"action": "else_body", "body": []})
-				elif line == "ENDIF":
-					var last = stack.pop_back()
-					if last["action"] == "else_body":
-						var wrapper = stack.pop_back()
-						wrapper["else_body"] = last["body"]
-						if stack.is_empty():
-							tokens.append(wrapper)
-						else:
-							_append_command(stack, wrapper)
-					else:
-						if stack.is_empty():
-							tokens.append(last)
-						else:
-							_append_command(stack, last)
-				else:
-					push_error("Unknown command: %s" % line)
-	return tokens
-
-func _append_command(stack: Array, cmd: Dictionary):
-	if stack.is_empty():
-		command_queue.append(cmd)
-	else:
-		if stack[-1].has("body") and typeof(stack[-1]["body"]) == TYPE_ARRAY:
-			stack[-1]["body"].append(cmd)
+		var content := trimmed.to_upper()
+		# Pop finished or same-level blocks
+		while stack.size() > 0 and (indent < stack[-1]["indent"] or ((stack[-1]["action"] in ["repeat", "loop", "while"]) and indent == stack[-1]["indent"])):
+			stack.pop_back()
+		# Determine where to append this command
+		var parent_body: Array
+		if stack.is_empty():
+			parent_body = root_commands
 		else:
-			push_error("Cannot append command — stack top has no valid 'body'")
+			var top = stack[-1]
+			if top["action"] == "if" and top.get("state", "body") == "else":
+				parent_body = top["else_body"]
+			else:
+				parent_body = top["body"]
+				
+		# Parse commands
+		if content == "LOOP":
+			var loop_block = {"action":"loop", "body":[], "indent":indent}
+			parent_body.append(loop_block)
+			stack.append(loop_block)
+		elif content.begins_with("REPEAT"):
+			var count := int(content.substr(6).strip_edges())
+			var repeat_block = {"action":"repeat", "count":count, "body":[], "indent":indent}
+			parent_body.append(repeat_block)
+			stack.append(repeat_block)
+		elif content.begins_with("WHILE NOT SENSOR"):
+			var name = trimmed.substr(len("WHILE NOT SENSOR")).strip_edges()
+			var while_block = {"action":"while", "condition":name, "negate":true, "body":[], "indent":indent}
+			parent_body.append(while_block)
+			stack.append(while_block)
+		elif content.begins_with("WHILE SENSOR"):
+			var name = trimmed.substr(len("WHILE SENSOR")).strip_edges()
+			var while_block = {"action":"while", "condition":name, "negate":false, "body":[], "indent":indent}
+			parent_body.append(while_block)
+			stack.append(while_block)
+		elif content.begins_with("IF SENSOR"):
+			var name := trimmed.substr(len("IF SENSOR")).strip_edges()
+			var if_block = {"action":"if", "condition":name, "negate":false, "body":[], "else_body":[], "indent":indent, "state":"body"}
+			parent_body.append(if_block)
+			stack.append(if_block)
+		elif content.begins_with("IF NOT SENSOR"):
+			# New support for inverted sensor check
+			var name := trimmed.substr(len("IF NOT SENSOR")).strip_edges()  # length of "IF NOT SENSOR"
+			var if_block = {"action":"if", "condition":name, "negate":true, "body":[], "else_body":[], "indent":indent, "state":"body"}
+			parent_body.append(if_block)
+			stack.append(if_block)
+		elif content == "ELSE":
+			if stack.is_empty() or stack[-1]["action"] != "if":
+				push_error("ELSE without matching IF")
+				return []
+			# Switch to else body for this if block
+			stack[-1]["state"] = "else"
+		elif content == "MOVE":
+			parent_body.append({"action":"move", "line":i})
+		elif content == "LEFT":
+			parent_body.append({"action":"left", "line":i})
+		elif content == "RIGHT":
+			parent_body.append({"action":"right", "line":i})
+		else:
+			push_error("Unknown command: %s" % trimmed)
+			return []
+	print_debug("=== PARSE TREE ===")
+	_debug_print_commands(root_commands)
+	print_debug("=== END PARSE TREE ===")
+	return root_commands
 
 func _run_command_list(commands: Array) -> void:
 	for cmd in commands:
@@ -128,23 +141,100 @@ func _run_command_list(commands: Array) -> void:
 						return
 					await _run_command_list(cmd["body"])
 					count += 1
+
+			"while":
+				# wcount must be typed so GDScript infers it correctly
+				var wcount: int = 0
+				# explicitly type your command‐fields
+				var sensor_name: String = cmd["condition"]
+				var negate: bool = cmd.get("negate", false)
+				# loop only while the (possibly‐negated) sensor stays true
+				while running \
+				  and not stop_flag \
+				  and (mouse.read_sensor(sensor_name) != negate):
+					if wcount >= max_iterations:
+						push_error("Infinite loop detected — execution aborted.")
+						running = false
+						return
+					await _run_command_list(cmd["body"])
+					wcount += 1
+				# jump straight back to the outer LOOP when the sensor flips
+				return
+
 			"repeat":
-				for i in cmd["count"]:
+				for i in range(cmd["count"]):
 					if stop_flag:
 						return
 					await _run_command_list(cmd["body"])
+
 			"if":
-				var result = mouse.read_sensor(cmd["condition"])
+				var sensor_name: String = cmd["condition"]
+				var raw_val: bool    = mouse.read_sensor(sensor_name)
+				var neg: bool        = cmd.get("negate", false)
+				# Godot inline‐if instead of C‐style ternary:
+				var result: bool = raw_val if not neg else not raw_val
 				if result:
 					await _run_command_list(cmd["body"])
 				else:
-					await _run_command_list(cmd.get("else_body", []))
+					await _run_command_list(cmd["else_body"])
+		
+		var delay: float
+		match cmd["action"]:
+			"left", "right":
+				delay = Globals.turn_delay
+			"repeat", "loop":
+				delay = Globals.repeat_delay
+			_:
+				delay = Globals.move_delay
+		await get_tree().create_timer(delay).timeout
 
-		if cmd["action"] == "LEFT" or cmd["action"] == "RIGHT":
-			await get_tree().create_timer(Globals.turn_delay).timeout
-		elif "REPEAT" in cmd["action"]:
-			await get_tree().create_timer(Globals.repeat_delay).timeout
-		else:
-			await get_tree().create_timer(Globals.move_delay).timeout
 	if not stop_flag:
 		emit_signal("finished")
+		
+# Dump the parsed command tree so you can see exactly
+# which commands ended up in which bodies/else_bodies.
+func dump_commands(cmds: Array, level: int = 0) -> void:
+	for cmd in cmds:
+		# indent the printout by one tab per tree‐level
+		var prefix := ""
+		for temp in range(level):
+			prefix += "\t"
+		# print the basic info
+		var info := "%s- action=%s (indent=%s)" % [prefix, cmd["action"], cmd.get("indent", "?")]
+		if cmd["action"] == "if":
+			info += " condition=\"%s\" negate=%s" % [cmd["condition"], cmd.get("negate", false)]
+		elif cmd["action"] == "repeat" or cmd["action"] == "loop":
+			info += " count=%s" % [cmd.get("count", "")]
+		print(info)
+
+		# recurse into bodies
+		if cmd["action"] == "if":
+			print("%s  body:" % prefix)
+			dump_commands(cmd["body"], level + 1)
+			print("%s  else_body:" % prefix)
+			dump_commands(cmd["else_body"], level + 1)
+		elif cmd["action"] in ["repeat", "loop", "while"]:
+			print("%s  body:" % prefix)
+			dump_commands(cmd["body"], level + 1)
+
+func _debug_print_commands(commands: Array, level: int = 0) -> void:
+	for cmd in commands:
+		# use String.repeat(), not "*" operator
+		var prefix: String      = "    ".repeat(level)
+		var indent_val: String  = str(cmd.get("indent", "?"))
+		var action: String      = cmd.get("action", "")
+		var extra: String       = ""
+
+		if action == "if":
+			extra = " condition=%s negate=%s" % [cmd["condition"], cmd.get("negate", false)]
+		elif action == "repeat":
+			extra = " count=%s" % cmd["count"]
+		# loop has no extra
+
+		print_debug("%s- %s (indent=%s)%s" % [prefix, action, indent_val, extra])
+
+		if cmd.has("body") and cmd["body"].size() > 0:
+			_debug_print_commands(cmd["body"], level + 1)
+		if cmd.has("else_body") and cmd["else_body"].size() > 0:
+			print_debug("%s  else:" % prefix)
+			_debug_print_commands(cmd["else_body"], level + 1)
