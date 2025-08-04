@@ -4,7 +4,7 @@ extends Node
 var interpreter_debug_enabled := false
 var debug_enabled := false
 var sensor_debug := false
-var print_parse_tree = false
+var print_parse_tree = true
 
 ## MOUSE SETTINGS ##
 var move_speed := 5
