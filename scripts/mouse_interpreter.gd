@@ -10,24 +10,35 @@ var running := false
 var mouse: Node = null
 var max_iterations := 1000
 var stop_flag := false
+var _run_id: int = 0
 
 func stop():
-	running = false
-	stop_flag = true
+	reset()
+	emit_signal("line_changed", -1)
 	emit_signal("finished")
+	
+func reset():
+	# cancel any pending run immediately
+	_run_id += 1
+	running = false
+	stop_flag = false
+	command_queue.clear()
+	emit_signal("finished")  # so UI toggles back
 
 func run_script(script_text: String, mouse_ref: Node):#
 	mouse = mouse_ref
 	command_queue = parse_script(script_text)
-	print("=== PARSE TREE ===")
-	dump_commands(command_queue)
-	print("=== END PARSE TREE ===")
+	if Globals.print_parse_tree:
+		print("=== PARSE TREE ===")
+		dump_commands(command_queue)
+		print("=== END PARSE TREE ===")
 	if command_queue.is_empty():
 		push_error("No commands to run.")
 		return
+	var my_token := _run_id
 	running = true
 	stop_flag = false
-	await _run_command_list(command_queue)
+	await _run_command_list(command_queue, my_token)
 
 func parse_script(script: String) -> Array:
 	var lines = script.split("\n", false)
@@ -35,7 +46,6 @@ func parse_script(script: String) -> Array:
 	var stack: Array = []
 	for i in range(lines.size()):
 		var raw_line: String = lines[i]
-		# → DEBUG: show raw content and computed indent
 		var indent := 0
 		var rest := raw_line
 		while rest.begins_with("\t") or rest.begins_with("    "):
@@ -46,7 +56,7 @@ func parse_script(script: String) -> Array:
 				indent += 1
 				rest = rest.substr(4)
 		var trimmed := rest.strip_edges()
-		print("DEBUG parse: line %d → indent=%d, trimmed=\"%s\"" % [i+1, indent, trimmed])
+		#print("DEBUG parse: line %d → indent=%d, trimmed=\"%s\"" % [i+1, indent, trimmed])
 		if trimmed == "" or trimmed.begins_with("#"):
 			continue
 		var content := trimmed.to_upper()
@@ -110,13 +120,12 @@ func parse_script(script: String) -> Array:
 		else:
 			push_error("Unknown command: %s" % trimmed)
 			return []
-	print_debug("=== PARSE TREE ===")
-	_debug_print_commands(root_commands)
-	print_debug("=== END PARSE TREE ===")
 	return root_commands
 
-func _run_command_list(commands: Array) -> void:
+func _run_command_list(commands: Array, token: int) -> void:
 	for cmd in commands:
+		if token != _run_id or stop_flag:
+			return
 		emit_signal("line_changed", cmd.get("line", -1))
 		if stop_flag:
 			push_warning("Execution stopped manually.")
@@ -127,19 +136,22 @@ func _run_command_list(commands: Array) -> void:
 
 		match cmd["action"]:
 			"move":
-				mouse.move_forward()
+				if token == _run_id:
+					mouse.move_forward()
 			"left":
-				mouse.turn_left()
+				if token == _run_id:
+					mouse.turn_left()
 			"right":
-				mouse.turn_right()
+				if token == _run_id:
+					mouse.turn_right()
 			"loop":
 				var count := 0
-				while running and not stop_flag:
+				while token == _run_id and running and not stop_flag:
 					if count > max_iterations:
 						push_error("Infinite loop detected — execution aborted.")
 						running = false
 						return
-					await _run_command_list(cmd["body"])
+					await _run_command_list(cmd["body"], token)
 					count += 1
 
 			"while":
@@ -149,35 +161,37 @@ func _run_command_list(commands: Array) -> void:
 				var sensor_name: String = cmd["condition"]
 				var negate: bool = cmd.get("negate", false)
 				# loop only while the (possibly‐negated) sensor stays true
-				while running \
-				  and not stop_flag \
-				  and (mouse.read_sensor(sensor_name) != negate):
+				while token == _run_id and running and not stop_flag and (mouse.read_sensor(sensor_name) != negate):
 					if wcount >= max_iterations:
 						push_error("Infinite loop detected — execution aborted.")
 						running = false
 						return
-					await _run_command_list(cmd["body"])
+					await _run_command_list(cmd["body"], token)
 					wcount += 1
 				# jump straight back to the outer LOOP when the sensor flips
 				return
 
 			"repeat":
 				for i in range(cmd["count"]):
-					if stop_flag:
+					if stop_flag or token != _run_id:
+						print("TOKEN INVALIDATED")
 						return
-					await _run_command_list(cmd["body"])
+					await _run_command_list(cmd["body"], token)
 
 			"if":
 				var sensor_name: String = cmd["condition"]
-				var raw_val: bool    = mouse.read_sensor(sensor_name)
-				var neg: bool        = cmd.get("negate", false)
+				var raw_val: bool = mouse.read_sensor(sensor_name)
+				var neg: bool = cmd.get("negate", false)
 				# Godot inline‐if instead of C‐style ternary:
 				var result: bool = raw_val if not neg else not raw_val
 				if result:
-					await _run_command_list(cmd["body"])
+					await _run_command_list(cmd["body"], token)
 				else:
-					await _run_command_list(cmd["else_body"])
-		
+					await _run_command_list(cmd["else_body"], token)
+
+		if token != _run_id or stop_flag:
+			return
+
 		var delay: float
 		match cmd["action"]:
 			"left", "right":
@@ -186,7 +200,8 @@ func _run_command_list(commands: Array) -> void:
 				delay = Globals.repeat_delay
 			_:
 				delay = Globals.move_delay
-		await get_tree().create_timer(delay).timeout
+		if delay != 0:
+			await get_tree().create_timer(delay).timeout
 
 	if not stop_flag:
 		emit_signal("finished")

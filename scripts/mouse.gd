@@ -8,6 +8,7 @@ var start_rotation: float
 @onready var front_prox: RayCast2D = $FrontProx
 @onready var left_prox: RayCast2D = $LeftProx
 @onready var right_prox: RayCast2D = $RightProx
+@onready var starting_scale = self.scale
 
 func _ready() -> void:
 	move_speed = Globals.move_speed
@@ -18,6 +19,7 @@ func _ready() -> void:
 	# Ensure raycasts are active
 	for rc in [front_prox, left_prox, right_prox]:
 		rc.enabled = true
+	await get_tree().process_frame
 
 func _process(_delta: float) -> void:
 	# Update raycasts and redraw each frame
@@ -60,3 +62,9 @@ func read_sensor(name: String) -> bool:
 func reset() -> void:
 	position = start_position
 	rotation = start_rotation
+	
+func resize_mouse(cell_size: float):
+	var ratio = cell_size/50
+	print(ratio)
+	self.scale.x = starting_scale.x * ratio
+	self.scale.y = starting_scale.y * ratio

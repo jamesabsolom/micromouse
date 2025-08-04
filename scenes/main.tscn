@@ -8,57 +8,89 @@
 
 [node name="Main" type="Node2D"]
 
-[node name="Maze" type="Node2D" parent="."]
-script = ExtResource("1_0wfyh")
-
-[node name="Goal" type="Area2D" parent="Maze"]
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Maze/Goal"]
-shape = SubResource("CircleShape2D_sugp2")
+[node name="Mouse" parent="." instance=ExtResource("2_sugp2")]
+z_index = 6
+position = Vector2(25, 23)
 
 [node name="UI" type="CanvasLayer" parent="."]
+layer = -1
 
-[node name="VBoxContainer" type="VBoxContainer" parent="UI"]
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
+[node name="HSplitContainer" type="HSplitContainer" parent="UI"]
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -595.0
-offset_top = -649.0
-grow_horizontal = 0
-grow_vertical = 0
-size_flags_vertical = 2
-script = ExtResource("2_jyhfs")
-mouse_path = NodePath("../../Mouse")
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 2
+size_flags_vertical = 10
+split_offset = 560
+dragging_enabled = false
 
-[node name="CodeEditor" type="TextEdit" parent="UI/VBoxContainer"]
+[node name="Container" type="Control" parent="UI/HSplitContainer"]
+layout_mode = 2
+
+[node name="Maze" type="Node2D" parent="UI/HSplitContainer/Container"]
+z_index = 4
+z_as_relative = false
+script = ExtResource("1_0wfyh")
+background_path = NodePath("../bkgrnd")
+mouse_path = NodePath("../../../../Mouse")
+splitter_path = NodePath("../..")
+
+[node name="Goal" type="Area2D" parent="UI/HSplitContainer/Container/Maze"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="UI/HSplitContainer/Container/Maze/Goal"]
+shape = SubResource("CircleShape2D_sugp2")
+
+[node name="bkgrnd" type="ColorRect" parent="UI/HSplitContainer/Container"]
+z_index = -10
+z_as_relative = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.142858, 0.142858, 0.142858, 1)
+
+[node name="Container2" type="Control" parent="UI/HSplitContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/HSplitContainer/Container2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_stretch_ratio = 0.0
+script = ExtResource("2_jyhfs")
+mouse_path = NodePath("../../../../Mouse")
+
+[node name="CodeEditor" type="TextEdit" parent="UI/HSplitContainer/Container2/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
 placeholder_text = "<Your Code Goes Here>"
 scroll_smooth = true
 
-[node name="HBoxContainer" type="HBoxContainer" parent="UI/VBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="UI/HSplitContainer/Container2/VBoxContainer"]
 layout_mode = 2
+size_flags_vertical = 0
 
-[node name="RunButton" type="Button" parent="UI/VBoxContainer/HBoxContainer"]
+[node name="RunButton" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 text = "RUN CODE"
 
-[node name="StopButton" type="Button" parent="UI/VBoxContainer/HBoxContainer"]
-layout_mode = 2
-text = "STOP"
-
-[node name="SaveButton" type="Button" parent="UI/VBoxContainer/HBoxContainer"]
+[node name="SaveButton" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 text = "SAVE CODE"
 
-[node name="LoadButton" type="Button" parent="UI/VBoxContainer/HBoxContainer"]
+[node name="LoadButton" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 text = "LOAD CODE"
 
-[node name="FileDialog" type="FileDialog" parent="UI/VBoxContainer"]
+[node name="FileDialog" type="FileDialog" parent="UI/HSplitContainer/Container2/VBoxContainer"]
 access = 2
 
-[node name="Mouse" parent="." instance=ExtResource("2_sugp2")]
-position = Vector2(25, 23)
+[connection signal="body_entered" from="UI/HSplitContainer/Container/Maze/Goal" to="UI/HSplitContainer/Container2/VBoxContainer" method="_on_Goal_body_entered"]

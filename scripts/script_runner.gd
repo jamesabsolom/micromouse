@@ -18,19 +18,21 @@ func _ready():
 	interpreter.line_changed.connect(_on_line_changed)
 	interpreter.finished.connect(_on_execution_finished)
 	run_button.pressed.connect(_on_run_pressed)
-	stop_button.pressed.connect(_on_Stop_pressed)
 	save_button.pressed.connect(_on_save_pressed)
 	load_button.pressed.connect(_on_load_pressed)
 	file_dialog.file_selected.connect(_on_file_selected)
 	
 func _on_run_pressed():
-	var code = code_editor.text
-	var mouse = get_node(mouse_path)
-	mouse.reset()
-	interpreter.run_script(code, mouse)
-	
-func _on_Stop_pressed():
-	interpreter.stop()
+	if interpreter.running:
+		interpreter.stop()
+		run_button.text = "RUN CODE"
+	else:
+		var code = code_editor.text
+		var mouse = get_node(mouse_path)
+		mouse.reset()
+		await get_tree().create_timer(0.5).timeout
+		interpreter.run_script(code, mouse)
+		run_button.text = "STOP"
 	
 func _on_line_changed(line_num: int):
 	if last_highlighted_line >= 0:
@@ -66,3 +68,10 @@ func _on_file_selected(path: String):
 		var file = FileAccess.open(path, FileAccess.READ)
 		if file:
 			code_editor.text = file.get_as_text()
+			
+func _on_Goal_body_entered(body):
+	print(body.name)
+	if body.name == "Mouse":
+		print("🎉 Robot reached the goal!")
+		interpreter.stop()  # Or call from scene root/UI	
+		run_button.text = "RUN CODE"

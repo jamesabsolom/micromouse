@@ -1,17 +1,33 @@
 extends Node2D
 
-const CELL_SIZE = 50
-const WIDTH = 10
-const HEIGHT = 10
+const WIDTH = 11
+const HEIGHT = 11
 
+var CELL_SIZE: float
 var grid = []
 var start = Vector2(0, 0)
 var end = Vector2(WIDTH - 1, HEIGHT - 1)
 
+@export var background_path: NodePath
+@export var mouse_path: NodePath
+@export var splitter_path: NodePath
+
 @onready var goal = $Goal
+@onready var background = get_node(background_path)
+@onready var mouse = get_node(mouse_path)
+@onready var splitter = get_node(splitter_path)
 
 func _ready():
 	generate_maze()
+	# Compute CELL_SIZE so the maze occupies half the screen width:
+	#   total maze pixel width = WIDTH * CELL_SIZE
+	#   we want: WIDTH * CELL_SIZE = viewport_width / 2
+	await get_tree().process_frame
+	splitter.set_split_offset(get_viewport_rect().size.x/2)
+	var vp_width = get_viewport_rect().size.x/2
+	print(vp_width)
+	CELL_SIZE = vp_width / WIDTH
+	mouse.resize_mouse(CELL_SIZE)
 	queue_redraw()
 	var goal_pos = end * CELL_SIZE + Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
 	goal.global_position = goal_pos
@@ -22,6 +38,8 @@ func _ready():
 		shape.radius = CELL_SIZE / 3
 	elif shape is RectangleShape2D:
 		shape.extents = Vector2(CELL_SIZE / 3, CELL_SIZE / 3)
+		
+	get_viewport().connect("size_changed", Callable(self, "_on_viewport_resized"))
 		
 func generate_maze():
 	grid = []
@@ -118,7 +136,12 @@ func draw_maze():
 	draw_circle(start_pos, 10, Color.GREEN)
 	draw_circle(end_pos, 10, Color.RED)
 	
-func _on_Goal_body_entered(body):
-	if body.name == "Mouse":
-		print("🎉 Robot reached the goal!")
-		body.get_parent().interpreter.stop()  # Or call from scene root/UI	
+func _on_viewport_resized():
+	# Recompute CELL_SIZE and redraw
+	splitter.set_split_offset(get_viewport_rect().size.x/2)
+	var vp_width = get_viewport_rect().size.x/2
+	print(vp_width)
+	CELL_SIZE = vp_width / WIDTH
+	mouse.resize_mouse(CELL_SIZE)
+	draw_maze()
+	queue_redraw()
