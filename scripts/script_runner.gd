@@ -1,11 +1,16 @@
 extends VBoxContainer
 
-@onready var code_editor = $CodeEditor
-@onready var run_button = $HBoxContainer/RunButton
-@onready var stop_button = $HBoxContainer/StopButton
-@onready var save_button = $HBoxContainer/SaveButton
-@onready var load_button = $HBoxContainer/LoadButton
-@onready var file_dialog = $FileDialog
+@export var code_editor_path: NodePath
+@export var run_button_path: NodePath
+@export var save_button_path: NodePath
+@export var load_button_path: NodePath
+@export var file_dialog_path: NodePath
+
+@onready var code_editor = get_node(code_editor_path)
+@onready var run_button = get_node(run_button_path)
+@onready var save_button = get_node(save_button_path)
+@onready var load_button = get_node(load_button_path)
+@onready var file_dialog = get_node(file_dialog_path)
 @onready var interpreter = preload("res://scripts/mouse_interpreter.gd").new()
 
 @export var mouse_path: NodePath  # drag the mouse into this in the Inspector
@@ -70,7 +75,6 @@ func _on_file_selected(path: String):
 			code_editor.text = file.get_as_text()
 			
 func _on_Goal_body_entered(body):
-	print(body.name)
 	if body.name == "Mouse":
 		print("🎉 Robot reached the goal!")
 		interpreter.stop()  # Or call from scene root/UI	

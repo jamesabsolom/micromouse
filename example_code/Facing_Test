@@ -1,0 +1,5 @@
+LOOP
+	WHILE NOT FACING {5,5}
+		LEFT
+
+	MOVE

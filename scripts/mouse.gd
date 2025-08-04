@@ -1,10 +1,12 @@
 extends CharacterBody2D
 
 @export var move_speed := 0
+@export var maze_path : NodePath
 
 var start_position: Vector2
 var start_rotation: float
 
+@onready var maze = get_node(maze_path)
 @onready var front_prox: RayCast2D = $FrontProx
 @onready var left_prox: RayCast2D = $LeftProx
 @onready var right_prox: RayCast2D = $RightProx
@@ -65,6 +67,18 @@ func reset() -> void:
 	
 func resize_mouse(cell_size: float):
 	var ratio = cell_size/50
-	print(ratio)
 	self.scale.x = starting_scale.x * ratio
 	self.scale.y = starting_scale.y * ratio
+	
+func get_current_cell() -> Vector2i:
+	var CELL_SIZE = maze.CELL_SIZE
+	return Vector2i(floor(position.x / CELL_SIZE), floor(position.y / CELL_SIZE))
+
+func is_facing_cell(target: Vector2i) -> bool:
+	var CELL_SIZE = maze.CELL_SIZE
+	var facing_dir = Vector2.RIGHT.rotated(rotation).normalized()
+	var target_world = Vector2(target.x * CELL_SIZE + CELL_SIZE / 2, target.y * CELL_SIZE + CELL_SIZE / 2)
+	var to_target = (target_world - global_position).normalized()
+	var angle_diff = facing_dir.angle_to(to_target)
+	#print(angle_diff)
+	return abs(angle_diff) < 0.01  # ~8.6 degrees tolerance
