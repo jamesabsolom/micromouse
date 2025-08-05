@@ -11,7 +11,7 @@ extends VBoxContainer
 @onready var save_button = get_node(save_button_path)
 @onready var load_button = get_node(load_button_path)
 @onready var file_dialog = get_node(file_dialog_path)
-@onready var interpreter = preload("res://scripts/mouse_interpreter.gd").new()
+@onready var interpreter = preload("res://scripts/interpreter/mouse_interpreter.gd").new()
 
 @export var mouse_path: NodePath  # drag the mouse into this in the Inspector
 
