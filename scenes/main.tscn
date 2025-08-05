@@ -1,0 +1,106 @@
+[gd_scene load_steps=5 format=3 uid="uid://bibm3u8hycr37"]
+
+[ext_resource type="Script" uid="uid://b717xco5do5q7" path="res://scripts/maze.gd" id="1_0wfyh"]
+[ext_resource type="Script" uid="uid://bow6ndxsal3t1" path="res://scripts/script_runner.gd" id="2_jyhfs"]
+[ext_resource type="PackedScene" uid="uid://bic00e40n4ase" path="res://scenes/mouse.tscn" id="2_sugp2"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_sugp2"]
+
+[node name="Main" type="Node2D"]
+
+[node name="Mouse" parent="." instance=ExtResource("2_sugp2")]
+z_index = 6
+position = Vector2(25, 23)
+maze_path = NodePath("../UI/HSplitContainer/Container/Maze")
+
+[node name="UI" type="CanvasLayer" parent="."]
+layer = -1
+
+[node name="HSplitContainer" type="HSplitContainer" parent="UI"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 2
+size_flags_vertical = 10
+split_offset = 560
+dragging_enabled = false
+
+[node name="Container" type="Control" parent="UI/HSplitContainer"]
+layout_mode = 2
+
+[node name="Maze" type="Node2D" parent="UI/HSplitContainer/Container"]
+z_index = 4
+z_as_relative = false
+script = ExtResource("1_0wfyh")
+background_path = NodePath("../bkgrnd")
+mouse_path = NodePath("../../../../Mouse")
+splitter_path = NodePath("../..")
+
+[node name="Goal" type="Area2D" parent="UI/HSplitContainer/Container/Maze"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="UI/HSplitContainer/Container/Maze/Goal"]
+shape = SubResource("CircleShape2D_sugp2")
+
+[node name="bkgrnd" type="ColorRect" parent="UI/HSplitContainer/Container"]
+z_index = -10
+z_as_relative = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.142858, 0.142858, 0.142858, 1)
+
+[node name="Container2" type="Control" parent="UI/HSplitContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/HSplitContainer/Container2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_stretch_ratio = 0.0
+script = ExtResource("2_jyhfs")
+code_editor_path = NodePath("CodeEditor")
+run_button_path = NodePath("HBoxContainer/RunButton")
+save_button_path = NodePath("HBoxContainer/SaveButton")
+load_button_path = NodePath("HBoxContainer/LoadButton")
+file_dialog_path = NodePath("FileDialog")
+mouse_path = NodePath("../../../../Mouse")
+
+[node name="CodeEditor" type="TextEdit" parent="UI/HSplitContainer/Container2/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+placeholder_text = "<Your Code Goes Here>"
+scroll_smooth = true
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UI/HSplitContainer/Container2/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="RunButton" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "RUN CODE"
+
+[node name="SaveButton" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "SAVE CODE"
+
+[node name="LoadButton" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "LOAD CODE"
+
+[node name="MazeButton" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "NEW MAZE"
+
+[node name="FileDialog" type="FileDialog" parent="UI/HSplitContainer/Container2/VBoxContainer"]
+access = 2
+
+[connection signal="body_entered" from="UI/HSplitContainer/Container/Maze/Goal" to="UI/HSplitContainer/Container2/VBoxContainer" method="_on_Goal_body_entered"]
