@@ -11,3 +11,6 @@ var move_speed := 5
 var move_delay := 0.001
 var turn_delay := 0.01
 var repeat_delay := 0
+
+## GLOBAL VARIABLES ##
+var mouse_ref = null

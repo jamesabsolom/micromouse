@@ -40,10 +40,19 @@ func _on_run_pressed():
 		run_button.text = "STOP"
 	
 func _on_line_changed(line_num: int):
-	if last_highlighted_line >= 0:
+	if last_highlighted_line >= 0 and last_highlighted_line < code_editor.get_line_count():
 		code_editor.set_line_background_color(last_highlighted_line, Color(0, 0, 0, 0))  # Clear previous
 
-	if line_num > -1:
+	if line_num >= 0 and line_num < code_editor.get_line_count():
+		var line_text = code_editor.get_line(line_num).strip_edges()
+		if line_text == "":
+			# If the line is blank, search downwards for next non-blank line to highlight instead
+			var next_line := line_num + 1
+			while next_line < code_editor.get_line_count():
+				if code_editor.get_line(next_line).strip_edges() != "":
+					line_num = next_line
+					break
+				next_line += 1
 		code_editor.set_line_background_color(line_num, Color(0.2, 0.6, 1.0, 0.3))  # Highlight current
 		code_editor.set_caret_line(line_num)
 		code_editor.set_v_scroll(line_num)
@@ -53,6 +62,7 @@ func _on_execution_finished():
 	if last_highlighted_line >= 0:
 		code_editor.set_line_background_color(last_highlighted_line, Color(0, 0, 0, 0))
 		last_highlighted_line = -1
+	run_button.text = "RUN CODE"
 		
 func _on_save_pressed():
 	is_saving = true

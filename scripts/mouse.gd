@@ -13,6 +13,7 @@ var start_rotation: float
 @onready var starting_scale = self.scale
 
 func _ready() -> void:
+	Globals.mouse_ref = self
 	move_speed = Globals.move_speed
 	start_position = position
 	start_rotation = rotation
@@ -84,10 +85,10 @@ func is_facing_cell(target: Vector2i) -> bool:
 	return abs(angle_diff) < 0.01  # ~8.6 degrees tolerance
 	
 func get_cell_center(grid_pos: Vector2i) -> Vector2:
-	var cell_size = 64  # or whatever your tile size is
+	var cell_size = maze.CELL_SIZE  # or whatever your tile size is
 	return Vector2(grid_pos.x * cell_size + cell_size / 2, grid_pos.y * cell_size + cell_size / 2)
 
 func snap_to_cell_center(cell: Vector2i) -> void:
-	var cell_size := Vector2(64, 64)  # Adjust to match your grid
+	var cell_size := Vector2(maze.CELL_SIZE, maze.CELL_SIZE)  # Adjust to match your grid
 	var center: Vector2 = Vector2(cell) * cell_size + cell_size / 2
 	global_position = center

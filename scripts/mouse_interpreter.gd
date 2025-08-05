@@ -11,6 +11,10 @@ var mouse: Node = null
 var max_iterations := 10000
 var stop_flag := false
 var _run_id: int = 0
+var variables := {}  # Dictionary to hold all variables
+
+
+var Helper : InterpreterHelper = preload("res://scripts/interpreter_helper.gd").new().init(self)
 
 func stop():
 	reset()
@@ -39,6 +43,7 @@ func run_script(script_text: String, mouse_ref: Node):#
 	running = true
 	stop_flag = false
 	await _run_command_list(command_queue, my_token)
+	emit_signal("finished")
 
 func parse_script(script: String) -> Array:
 	var lines = script.split("\n", false)
@@ -61,7 +66,7 @@ func parse_script(script: String) -> Array:
 			continue
 		var content := trimmed.to_upper()
 		# Pop finished or same-level blocks
-		while stack.size() > 0 and (indent < stack[-1]["indent"] or ((stack[-1]["action"] in ["repeat", "loop", "while", "while_facing", "while_on", "while_centered"]) and indent == stack[-1]["indent"])):
+		while stack.size() > 0 and (indent < stack[-1]["indent"] or ((stack[-1]["action"] in ["repeat", "loop", "while", "while_facing", "while_on", "while_centered", "for_loop"]) and indent == stack[-1]["indent"])):
 			stack.pop_back()
 		# Determine where to append this command
 		var parent_body: Array
@@ -87,6 +92,22 @@ func parse_script(script: String) -> Array:
 			var repeat_block = {"action":"repeat", "count":count, "body":[], "indent":indent}
 			parent_body.append(repeat_block)
 			stack.append(repeat_block)
+		elif content.begins_with("FOR ") and " IN " in content:
+			var pieces = content.substr(4).split(" IN ", false)
+			if pieces.size() != 2:
+				push_error("Invalid FOR syntax: " + trimmed)
+				return []
+			var var_name = pieces[0].strip_edges().to_lower()
+			var list_name = pieces[1].strip_edges().to_lower()
+			var for_block = {
+				"action": "for_loop",
+				"var_name": var_name,
+				"list_name": list_name,
+				"body": [],
+				"indent": indent
+			}
+			parent_body.append(for_block)
+			stack.append(for_block)
 #--------------------------------------------------------------------------------
 #							WHILE STATEMENTS
 #--------------------------------------------------------------------------------
@@ -167,7 +188,7 @@ func parse_script(script: String) -> Array:
 #							ELSE STATEMENTS
 #--------------------------------------------------------------------------------
 		elif content == "ELSE":
-			if stack.is_empty() or stack[-1]["action"] != "if":
+			if stack.is_empty() or stack[-1]["action"] not in ["if", "if_facing", "if_on"]:
 				push_error("ELSE without matching IF")
 				return []
 			# Switch to else body for this if block
@@ -181,6 +202,88 @@ func parse_script(script: String) -> Array:
 			parent_body.append({"action":"left", "line":i})
 		elif content == "RIGHT":
 			parent_body.append({"action":"right", "line":i})
+#--------------------------------------------------------------------------------
+#							VARIABLE STATEMENTS
+#--------------------------------------------------------------------------------
+		elif content.begins_with("VAR "):
+			var decl_str = trimmed.substr(len("VAR "))
+			var eq_index = decl_str.find("=")
+			if eq_index == -1:
+				push_error("Missing '=' in VAR statement")
+				return []
+			var declaration = decl_str.substr(0, eq_index).strip_edges()
+			var value_str = decl_str.substr(eq_index + 1).strip_edges()
+			var parts = declaration.split(" ", false)
+			if parts.size() != 2:
+				push_error("Invalid VAR syntax: " + trimmed)
+				return []
+
+			var var_type = parts[0].to_upper()
+			var var_name = parts[1].to_lower()
+			var cmd = {
+				"action": "declare_var",
+				"type": var_type,
+				"name": var_name,
+				"value": value_str,
+				"line": i
+			}
+			parent_body.append(cmd)
+
+		elif content.begins_with("SET "):
+			var decl_str := trimmed.substr(len("SET ")).strip_edges()
+			var eq_index := decl_str.find("=")
+			if eq_index == -1:
+				push_error("Missing '=' in SET statement")
+				return []
+
+			var var_name := decl_str.substr(0, eq_index).strip_edges().to_lower()
+			var value_str := decl_str.substr(eq_index + 1).strip_edges()
+
+			var cmd = {
+				"action": "set_var",
+				"name": var_name,
+				"value": value_str,
+				"line": i
+			}
+			parent_body.append(cmd)
+			
+		elif content.begins_with("LIST "):
+			var decl_str = trimmed.substr(len("LIST "))
+			var eq_index = decl_str.find("=")
+			if eq_index == -1:
+				push_error("Missing '=' in LIST statement")
+				return []
+			var declaration = decl_str.substr(0, eq_index).strip_edges()
+			var value_str = decl_str.substr(eq_index + 1).strip_edges()
+			var parts = declaration.split(" ", false)
+			if parts.size() != 2:
+				push_error("Invalid LIST syntax: " + trimmed)
+				return []
+			var var_type = parts[0].to_upper()
+			var var_name = parts[1].to_lower()
+			var cmd = {
+				"action": "declare_list",
+				"type": var_type,
+				"name": var_name,
+				"value": value_str,
+				"line": i
+			}
+			parent_body.append(cmd)
+			
+		elif content.begins_with("APPEND "):
+			var append_parts = trimmed.substr(len("APPEND ")).strip_edges()
+			var parts = append_parts.split(" ", false)
+			if parts.size() != 2:
+				push_error("Invalid APPEND syntax: " + trimmed)
+				return []
+			var cmd = {
+				"action": "append_var",
+				"name": parts[0].to_lower(),
+				"value": parts[1],
+				"line": i
+			}
+			parent_body.append(cmd)
+
 		else:
 			push_error("Unknown command: %s" % trimmed)
 			return []
@@ -190,7 +293,9 @@ func _run_command_list(commands: Array, token: int) -> void:
 	for cmd in commands:
 		if token != _run_id or stop_flag:
 			return
-		emit_signal("line_changed", cmd.get("line", -1))
+		# Only highlight leaf/executable commands, not control structures
+		if not cmd["action"].begins_with("while") and not cmd["action"].begins_with("if") and cmd["action"] not in ["loop", "repeat"]:
+			emit_signal("line_changed", cmd.get("line", -1))
 		if stop_flag:
 			push_warning("Execution stopped manually.")
 			return
@@ -240,49 +345,60 @@ func _run_command_list(commands: Array, token: int) -> void:
 					if stop_flag or token != _run_id:
 						print("TOKEN INVALIDATED")
 						return
-					await _run_command_list(cmd["body"], token)
+					for inner_cmd in cmd["body"]:
+						if token != _run_id or stop_flag:
+							return
+						emit_signal("line_changed", inner_cmd.get("line", -1))
+						await _run_command_list([inner_cmd], token)
 
 			"if":
 				var sensor_name: String = cmd["condition"]
 				var raw_val: bool = mouse.read_sensor(sensor_name)
 				var neg: bool = cmd.get("negate", false)
-				# Godot inline‐if instead of C‐style ternary:
 				var result: bool = raw_val if not neg else not raw_val
 				if result:
+					emit_signal("line_changed", cmd.get("line", -1))
 					await _run_command_list(cmd["body"], token)
 				else:
+					emit_signal("line_changed", cmd.get("line", -1))
 					await _run_command_list(cmd["else_body"], token)
-			
+				return
+
 			"if_facing", "if_on":
-				var target = cmd["target"]
+				var target_str: String = cmd["target"]
+				var target_pos: Vector2i = Helper._resolve_position(target_str)
 				var neg = cmd["negate"]
-				var match_result = _compare_position(cmd["action"], target)
-				var result = not match_result if neg else match_result
+				var result := not Helper._compare_position(cmd["action"], target_pos) if neg else Helper._compare_position(cmd["action"], target_pos)
+				emit_signal("line_changed", cmd.get("line", -1))
 				if result:
 					await _run_command_list(cmd["body"], token)
 				else:
 					await _run_command_list(cmd["else_body"], token)
+				return
 
 			"while_facing", "while_on":
 				var wcount := 0
-				var target = cmd["target"]
+				var target_str: String = cmd["target"]
 				var neg = cmd["negate"]
-				while token == _run_id and running and not stop_flag and (_compare_position(cmd["action"], target) != neg):
+
+				while token == _run_id and running and not stop_flag and (Helper._compare_position(cmd["action"], Helper._resolve_position(target_str)) != neg):
 					if wcount >= max_iterations:
 						push_error("Infinite loop detected — execution aborted.")
 						running = false
 						return
+
 					for inner_cmd in cmd["body"]:
 						if token != _run_id or stop_flag:
 							return
-						await _run_command_list([inner_cmd], token)  # Run one-by-one
+						emit_signal("line_changed", inner_cmd.get("line", -1))
+						await _run_command_list([inner_cmd], token)
 					wcount += 1
-					
+
 			"while_centered":
 				var wcount := 0
-				var target = cmd["target"]
+				var target = Helper._resolve_position(cmd["target"])
 				var neg = cmd["negate"]
-				while token == _run_id and running and not stop_flag and (_is_centered(target) != neg):
+				while token == _run_id and running and not stop_flag and (Helper._is_centered(target) != neg):
 					if wcount >= max_iterations:
 						push_error("Infinite loop detected — execution aborted.")
 						running = false
@@ -290,11 +406,92 @@ func _run_command_list(commands: Array, token: int) -> void:
 					for inner_cmd in cmd["body"]:
 						if token != _run_id or stop_flag:
 							return
+						emit_signal("line_changed", inner_cmd.get("line", -1))
 						await _run_command_list([inner_cmd], token)
 					wcount += 1
 				# Snap to exact center if condition was positive (i.e. user was trying to center)
 				if not neg and token == _run_id and not stop_flag:
-					mouse.snap_to_cell_center(_parse_position(target))
+					mouse.snap_to_cell_center(Helper._parse_position(target))
+					
+			"declare_var":
+				var name = cmd["name"]
+				var var_type = cmd["type"]
+				var value = Helper._convert_value(var_type, cmd["value"])
+				if value == null:
+					push_error("Invalid value for variable %s of type %s" % [name, var_type])
+				else:
+					variables[name] = { "type": var_type, "value": value }
+
+			"set_var":
+				var name = cmd["name"]
+				if not variables.has(name):
+					push_error("Variable '%s' not declared" % name)
+					return
+				var var_type = variables[name]["type"]
+				var value = Helper._convert_value(var_type, cmd["value"])
+				if value == null:
+					push_error("Invalid value for %s of type %s" % [name, var_type])
+				else:
+					variables[name]["value"] = value
+					
+			"declare_list":
+				var name = cmd["name"]
+				var var_type = cmd["type"]
+				var values = Helper._convert_list_value(var_type, cmd["value"])
+				if values == null:
+					push_error("Invalid list value for %s of type %s" % [name, var_type])
+				else:
+					variables[name] = { "type": "LIST_" + var_type, "value": values }
+
+			"set_var":
+				var name = cmd["name"]
+				if not variables.has(name):
+					push_error("Variable '%s' not declared" % name)
+					return
+				var var_type = variables[name]["type"]
+				var value
+				if var_type.begins_with("LIST_"):
+					value = Helper._convert_list_value(var_type.replace("LIST_", ""), cmd["value"])
+				else:
+					value = Helper._convert_value(var_type, cmd["value"])
+				if value == null:
+					push_error("Invalid value for %s of type %s" % [name, var_type])
+				else:
+					variables[name]["value"] = value
+					
+			"append_var":
+				var name = cmd["name"]
+				if not variables.has(name):
+					push_error("Cannot append: variable '%s' not found" % name)
+					return
+				if not variables[name]["type"].begins_with("LIST_"):
+					push_error("Cannot append to non-list variable '%s'" % name)
+					return
+				var base_type = variables[name]["type"].replace("LIST_", "")
+				var value = Helper._resolve_value(base_type, cmd["value"])
+				if value == null:
+					push_error("Invalid value to append: %s" % cmd["value"])
+				else:
+					variables[name]["value"].append(value)
+					
+			"for_loop":
+				var list_name = cmd["list_name"]
+				var var_name = cmd["var_name"]
+				if not variables.has(list_name):
+					push_error("List '%s' not declared" % list_name)
+					return
+				var list_data = variables[list_name]
+				if typeof(list_data.value) != TYPE_ARRAY:
+					push_error("Variable '%s' is not a list" % list_name)
+					return
+
+				for item in list_data.value:
+					variables[var_name] = {"type": "VECTOR", "value": item}
+					for inner_cmd in cmd["body"]:
+						if token != _run_id or stop_flag:
+							return
+						emit_signal("line_changed", inner_cmd.get("line", -1))
+						await _run_command_list([inner_cmd], token)
 
 		if token != _run_id or stop_flag:
 			return
@@ -310,69 +507,6 @@ func _run_command_list(commands: Array, token: int) -> void:
 		if delay != 0:
 			await get_tree().create_timer(delay).timeout
 
-	if not stop_flag:
-		emit_signal("finished")
-
-func _compare_position(mode: String, target_str: String) -> bool:
-	var target_pos: Vector2i
-	if target_str.begins_with("{") and target_str.ends_with("}"):
-		var raw = target_str.substr(1, target_str.length() - 2).strip_edges()
-		var parts = raw.split(",", false)
-		if parts.size() != 2:
-			push_error("Invalid coordinate format: " + target_str)
-			return false
-		target_pos = Vector2i(parts[0].to_int(), parts[1].to_int())
-	else:
-		# In future: support variables
-		push_error("Variables not supported yet: " + target_str)
-		return false
-
-	match mode:
-		"if_facing", "while_facing":
-			return mouse.is_facing_cell(target_pos)
-		"if_on", "while_on":
-			return mouse.get_current_cell() == target_pos
-		_:
-			push_error("Unknown position mode: " + mode)
-			return false
-			
-func _is_centered(target_str: String) -> bool:
-	var target_pos: Vector2i
-	if target_str.begins_with("{") and target_str.ends_with("}"):
-		var raw: String = target_str.substr(1, target_str.length() - 2).strip_edges()
-		var parts: PackedStringArray = raw.split(",", false)
-		if parts.size() != 2:
-			push_error("Invalid coordinate format: " + target_str)
-			return false
-		target_pos = Vector2i(parts[0].to_int(), parts[1].to_int())
-	else:
-		push_error("Invalid position format: " + target_str)
-		return false
-
-	var current_pos: Vector2 = mouse.global_position
-	var center: Vector2 = mouse.get_cell_center(target_pos)
-	var dist: float = current_pos.distance_to(center)
-
-	if Globals.interpreter_debug_enabled:
-		print_debug("Checking centeredness: pos=", current_pos, " target_center=", center, " dist=", dist)
-
-	return dist < 10.0  # Adjust as needed
-
-func _parse_position(pos_str: String) -> Vector2i:
-	if pos_str.begins_with("{") and pos_str.ends_with("}"):
-		var trimmed = pos_str.substr(1, pos_str.length() - 2).strip_edges()
-		var parts = trimmed.split(",", false)
-		if parts.size() != 2:
-			push_error("Invalid coordinate format: " + pos_str)
-			return Vector2i.ZERO
-		return Vector2i(parts[0].to_int(), parts[1].to_int())
-	else:
-		push_error("Expected coordinate in format {x, y}, got: " + pos_str)
-		return Vector2i.ZERO
-
-
-# Dump the parsed command tree so you can see exactly
-# which commands ended up in which bodies/else_bodies.
 func dump_commands(cmds: Array, level: int = 0) -> void:
 	for cmd in cmds:
 		# indent the printout by one tab per tree‐level
@@ -383,7 +517,7 @@ func dump_commands(cmds: Array, level: int = 0) -> void:
 		var info := "%s- action=%s (indent=%s)" % [prefix, cmd["action"], cmd.get("indent", "?")]
 		if cmd["action"] in ["if", "if_facing", "if_on"]:
 			info += " condition=\"%s\" negate=%s" % [cmd["condition"], cmd.get("negate", false)]
-		elif cmd["action"] == "repeat" or cmd["action"] == "loop":
+		elif cmd["action"] in ["repeat", "loop", "for_loop"]:
 			info += " count=%s" % [cmd.get("count", "")]
 		print(info)
 
@@ -393,7 +527,7 @@ func dump_commands(cmds: Array, level: int = 0) -> void:
 			dump_commands(cmd["body"], level + 1)
 			print("%s  else_body:" % prefix)
 			dump_commands(cmd["else_body"], level + 1)
-		elif cmd["action"] in ["repeat", "loop", "while", "while_facing", "while_on", "while_centered"]:
+		elif cmd["action"] in ["repeat", "loop", "while", "while_facing", "while_on", "while_centered", "for_loop"]:
 			print("%s  body:" % prefix)
 			dump_commands(cmd["body"], level + 1)
 
