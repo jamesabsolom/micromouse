@@ -30,6 +30,9 @@ func _split_top_level(input: String, delimiter: String = ",") -> Array:
 	
 func _resolve_value(var_type: String, raw: String) -> Variant:
 	raw = raw.strip_edges()
+	# literal POSITION → current cell
+	if raw.to_upper() == "POSITION":
+		return interpreter.mouse.get_current_cell()
 	if interpreter.variables.has(raw.to_lower()):
 		var entry = interpreter.variables[raw.to_lower()]
 		if entry["type"] == var_type or entry["type"] == "LIST_" + var_type:
@@ -55,6 +58,10 @@ func _convert_list_value(var_type: String, raw_value: String) -> Array:
 	return result
 
 func _convert_value(var_type: String, raw_value: String) -> Variant:
+	# allow POSITION as a VECTOR literal
+	if var_type == "VECTOR" and raw_value.strip_edges().to_upper() == "POSITION":
+		return interpreter.mouse.get_current_cell()
+	
 	match var_type:
 		"INT":
 			return int(raw_value)
@@ -70,6 +77,9 @@ func _convert_value(var_type: String, raw_value: String) -> Variant:
 			
 func _resolve_position(pos_str: String) -> Vector2i:
 	pos_str = pos_str.strip_edges()
+	# literal POSITION → current cell
+	if pos_str.to_upper() == "POSITION":
+		return interpreter.mouse.get_current_cell()
 	pos_str = pos_str.to_lower()
 	if pos_str.begins_with("{") and pos_str.ends_with("}"):
 		var raw = pos_str.substr(1, pos_str.length() - 2).strip_edges()
@@ -121,7 +131,7 @@ func _is_centered(target: Variant) -> bool:
 	if Globals.interpreter_debug_enabled:
 		print_debug("Checking centeredness: pos=", current_pos, " target_center=", center, " dist=", dist)
 
-	return dist < 10.0  # Adjust threshold if needed
+	return dist < 15.0  # Adjust threshold if needed
 
 func _compare_position(mode: String, target_pos: Vector2i) -> bool:
 	var mouse = Globals.mouse_ref

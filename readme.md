@@ -25,6 +25,8 @@ It follows the Micromouse competition rules, where a robot must navigate through
 - SET *var_name* = *value*: Sets the value of an existing variable.
 - LIST *var_type* *var_name* = [*item1*,*item2*, ...]: Defines a list variable with specified items.
 - APPEND *var_name* *value*: Appends an item to an existing list variable.
+- POSITION: Returns the current position of the robot as a vector. Can be used anywhere a vector is expected.
+    - *Example:* WHILE NOT CENTERED POSITION: Checks if the robot is not centered on its current position.
 
 ### Loop,Repeat and For Commands
 - LOOP: Starts a loop which will just repeat until broken.
@@ -70,9 +72,12 @@ It follows the Micromouse competition rules, where a robot must navigate through
         - [ ] VAR BOOLEAN VARNAME TRUE/FALSE
         - [ ] SET VARNAME TRUE/FALSE
         - [ ] IF VARNAME TRUE/FALSE with not variant
+    - [ ] Add a way to create a vector variable from two existing integer variables
+        - [ ] VAR VECTOR VARNAME = {VAR1, VAR2}
+        - [ ] SET VARNAME = {VAR1, VAR2}
 
 - [ ] Progress to optimistic movement
-    - [ ] POSITION keyword which just returns your current position
+    - [ ] POSITION keyword which just returns your current position (SET VARNAME = POSITION)
     - [ ] IF VALUE IN LIST support with not variant
     - [ ] CLEAR LIST support to allow clearing of visited lists
 

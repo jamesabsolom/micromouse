@@ -31,9 +31,19 @@ func parse_script(script: String) -> Array:
 		if trimmed == "" or trimmed.begins_with("#"):
 			continue
 		var content := trimmed.to_upper()
-		# Pop finished or same-level blocks
-		while stack.size() > 0 and (indent < stack[-1]["indent"] or(stack[-1]["action"] in BLOCK_TYPES and indent == stack[-1]["indent"])):
-			stack.pop_back()
+
+		while stack.size() > 0:
+			var top = stack[-1]
+			var is_if_waiting_else = top["action"] in ["if", "if_on", "if_facing"] and top.get("state", "body") == "body"
+			var same_level = indent == top["indent"]
+
+			if indent < top["indent"]:
+				stack.pop_back()
+			elif same_level and top["action"] in BLOCK_TYPES and not is_if_waiting_else:
+				stack.pop_back()
+			else:
+				break
+
 		# Determine where to append this command
 		var parent_body: Array
 		if stack.is_empty():

@@ -173,10 +173,11 @@ func _run_command_list(commands: Array, token: int) -> void:
 
 			"while_centered":
 				var wcount := 0
-				var target = Helper._resolve_position(cmd["target"])
+				var target_str = cmd["target"]         # keep the literal string
 				var neg = cmd["negate"]
 				loop_stack.append({"type": "while_centered", "break": false, "continue": false})
-				while token == _run_id and running and not stop_flag and (Helper._is_centered(target) != neg):
+				# re-resolve on each iteration
+				while token == _run_id and running and not stop_flag and (Helper._is_centered(Helper._resolve_position(target_str)) != neg):
 					if wcount >= max_iterations:
 						push_error("Infinite loop detected — execution aborted.")
 						running = false
@@ -194,8 +195,11 @@ func _run_command_list(commands: Array, token: int) -> void:
 							continue
 					wcount += 1
 				loop_stack.pop_back()
-				if not neg and token == _run_id and not stop_flag:
-					mouse.snap_to_cell_center(Helper._parse_position(target))
+				# only after a WHILE NOT CENTERED do we snap to the newly-resolved center
+				if neg and token == _run_id and not stop_flag:
+					var final_target = Helper._resolve_position(target_str)
+					mouse.snap_to_cell_center(final_target)
+
 
 			"for_loop":
 				var list_name = cmd["list_name"]
