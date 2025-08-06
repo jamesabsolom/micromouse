@@ -7,6 +7,8 @@ extends VBoxContainer
 @export var file_dialog_path: NodePath
 @export var maze_path: NodePath
 @export var generate_button_path: NodePath
+@export var settings_button_path: NodePath
+@export var settings_popup_path: NodePath
 
 @onready var code_editor = get_node(code_editor_path)
 @onready var run_button = get_node(run_button_path)
@@ -15,6 +17,8 @@ extends VBoxContainer
 @onready var file_dialog = get_node(file_dialog_path)
 @onready var maze = get_node(maze_path)
 @onready var gen_button = get_node(generate_button_path)
+@onready var settings_button = get_node(settings_button_path)
+@onready var settings_popup = get_node(settings_popup_path)
 @onready var interpreter = preload("res://scripts/interpreter/mouse_interpreter.gd").new()
 
 @export var mouse_path: NodePath  # drag the mouse into this in the Inspector
@@ -31,6 +35,7 @@ func _ready():
 	load_button.pressed.connect(_on_load_pressed)
 	file_dialog.file_selected.connect(_on_file_selected)
 	gen_button.pressed.connect(_on_generate_pressed)
+	settings_button.pressed.connect(_on_settings_pressed)
 	
 func _on_run_pressed():
 	if interpreter.running:
@@ -112,3 +117,7 @@ func _on_generate_pressed():
 	maze.mouse.resize_mouse(maze.CELL_SIZE)
 	maze._position_goal()
 	maze.queue_redraw()
+
+func _on_settings_pressed():
+	# Show the popup (it will read current Globals in _ready())
+	settings_popup.popup_centered()

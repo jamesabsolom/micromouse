@@ -1,8 +1,9 @@
-[gd_scene load_steps=5 format=3 uid="uid://bibm3u8hycr37"]
+[gd_scene load_steps=6 format=3 uid="uid://bibm3u8hycr37"]
 
 [ext_resource type="Script" uid="uid://b717xco5do5q7" path="res://scripts/maze.gd" id="1_0wfyh"]
 [ext_resource type="Script" uid="uid://bow6ndxsal3t1" path="res://scripts/script_runner.gd" id="2_jyhfs"]
 [ext_resource type="PackedScene" uid="uid://bic00e40n4ase" path="res://scenes/mouse.tscn" id="2_sugp2"]
+[ext_resource type="Script" uid="uid://ddhd8e5ap4106" path="res://scripts/UI/settings_popup.gd" id="4_jyhfs"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_sugp2"]
 
@@ -68,12 +69,14 @@ grow_vertical = 2
 size_flags_stretch_ratio = 0.0
 script = ExtResource("2_jyhfs")
 code_editor_path = NodePath("CodeEditor")
-run_button_path = NodePath("HBoxContainer/RunButton")
-save_button_path = NodePath("HBoxContainer/SaveButton")
-load_button_path = NodePath("HBoxContainer/LoadButton")
+run_button_path = NodePath("CenterContainer/HBoxContainer/RunButton")
+save_button_path = NodePath("CenterContainer/HBoxContainer/SaveButton")
+load_button_path = NodePath("CenterContainer/HBoxContainer/LoadButton")
 file_dialog_path = NodePath("FileDialog")
 maze_path = NodePath("../../Container/Maze")
-generate_button_path = NodePath("HBoxContainer/MazeButton")
+generate_button_path = NodePath("CenterContainer/HBoxContainer/MazeButton")
+settings_button_path = NodePath("CenterContainer/HBoxContainer/Settings")
+settings_popup_path = NodePath("../../../PopupPanel")
 mouse_path = NodePath("../../../../Mouse")
 
 [node name="CodeEditor" type="TextEdit" parent="UI/HSplitContainer/Container2/VBoxContainer"]
@@ -82,31 +85,110 @@ size_flags_vertical = 3
 placeholder_text = "<Your Code Goes Here>"
 scroll_smooth = true
 
-[node name="HBoxContainer" type="HBoxContainer" parent="UI/HSplitContainer/Container2/VBoxContainer"]
+[node name="CenterContainer" type="CenterContainer" parent="UI/HSplitContainer/Container2/VBoxContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UI/HSplitContainer/Container2/VBoxContainer/CenterContainer"]
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="RunButton" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/HBoxContainer"]
+[node name="RunButton" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/CenterContainer/HBoxContainer"]
 layout_mode = 2
 text = "RUN CODE"
 
-[node name="SaveButton" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/HBoxContainer"]
+[node name="SaveButton" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/CenterContainer/HBoxContainer"]
 layout_mode = 2
 text = "SAVE CODE"
 
-[node name="LoadButton" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/HBoxContainer"]
+[node name="LoadButton" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/CenterContainer/HBoxContainer"]
 layout_mode = 2
 text = "LOAD CODE"
 
-[node name="MazeButton" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/HBoxContainer"]
+[node name="MazeButton" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/CenterContainer/HBoxContainer"]
 layout_mode = 2
 text = "NEW MAZE"
 
-[node name="Documentation" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/HBoxContainer"]
+[node name="Documentation" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/CenterContainer/HBoxContainer"]
 layout_mode = 2
 text = "DOCS"
 
+[node name="Settings" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/CenterContainer/HBoxContainer"]
+layout_mode = 2
+text = "SETTINGS"
+
 [node name="FileDialog" type="FileDialog" parent="UI/HSplitContainer/Container2/VBoxContainer"]
 access = 2
+
+[node name="PopupPanel" type="PopupPanel" parent="UI"]
+transparent_bg = false
+size = Vector2i(234, 225)
+script = ExtResource("4_jyhfs")
+cb_interpreter_debug_path = NodePath("MarginContainer/VBoxContainer/cb_interpreter_debug")
+cb_sensor_debug_path = NodePath("MarginContainer/VBoxContainer/cb_sensor_debug")
+cb_print_parse_tree_path = NodePath("MarginContainer/VBoxContainer/cb_print_parse_tree")
+btn_ok_path = NodePath("MarginContainer/VBoxContainer/HBoxContainer/btn_ok")
+btn_cancel_path = NodePath("MarginContainer/VBoxContainer/HBoxContainer/btn_cancel")
+slider_mouse_speed_path = NodePath("MarginContainer/VBoxContainer/HBoxContainer2/slider_mouse_speed")
+lbl_speed_value_path = NodePath("MarginContainer/VBoxContainer/HBoxContainer2/lbl_speed_value")
+
+[node name="MarginContainer" type="MarginContainer" parent="UI/PopupPanel"]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 230.0
+offset_bottom = 221.0
+
+[node name="ColorRect" type="ColorRect" parent="UI/PopupPanel/MarginContainer"]
+layout_mode = 2
+color = Color(0.479183, 0.479183, 0.479183, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/PopupPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="lbl_mouse_settings" type="Label" parent="UI/PopupPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "MOUSE SETTINGS"
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="UI/PopupPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="lbl_mouse_speed" type="Label" parent="UI/PopupPanel/MarginContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+text = "Mouse Speed:"
+
+[node name="slider_mouse_speed" type="HSlider" parent="UI/PopupPanel/MarginContainer/VBoxContainer/HBoxContainer2"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+max_value = 10.0
+
+[node name="lbl_speed_value" type="Label" parent="UI/PopupPanel/MarginContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+text = "5"
+
+[node name="lbl_debug_settings" type="Label" parent="UI/PopupPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "DEBUG SETTINGS"
+
+[node name="cb_interpreter_debug" type="CheckBox" parent="UI/PopupPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Interpreter Debug"
+
+[node name="cb_sensor_debug" type="CheckBox" parent="UI/PopupPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Sensor Debug"
+
+[node name="cb_print_parse_tree" type="CheckBox" parent="UI/PopupPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Print Parse Tree"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UI/PopupPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="btn_ok" type="Button" parent="UI/PopupPanel/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Confirm"
+
+[node name="btn_cancel" type="Button" parent="UI/PopupPanel/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Cancel"
 
 [connection signal="body_entered" from="UI/HSplitContainer/Container/Maze/Goal" to="UI/HSplitContainer/Container2/VBoxContainer" method="_on_Goal_body_entered"]

@@ -1,3 +1,4 @@
+# res://scripts/globals.gd
 extends Node
 
 ## DEBUG SETTINGS ##

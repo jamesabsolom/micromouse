@@ -14,7 +14,6 @@ var start_rotation: float
 
 func _ready() -> void:
 	Globals.mouse_ref = self
-	move_speed = Globals.move_speed
 	start_position = position
 	start_rotation = rotation
 	# Always enable processing so _process and _draw run each frame
@@ -40,7 +39,7 @@ func _draw() -> void:
 
 func move_forward() -> void:
 	var direction = Vector2.RIGHT.rotated(rotation)
-	velocity = direction * move_speed
+	velocity = direction * Globals.move_speed
 	move_and_collide(velocity)
 
 func turn_left() -> void:
