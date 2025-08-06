@@ -72,6 +72,8 @@ run_button_path = NodePath("HBoxContainer/RunButton")
 save_button_path = NodePath("HBoxContainer/SaveButton")
 load_button_path = NodePath("HBoxContainer/LoadButton")
 file_dialog_path = NodePath("FileDialog")
+maze_path = NodePath("../../Container/Maze")
+generate_button_path = NodePath("HBoxContainer/MazeButton")
 mouse_path = NodePath("../../../../Mouse")
 
 [node name="CodeEditor" type="TextEdit" parent="UI/HSplitContainer/Container2/VBoxContainer"]

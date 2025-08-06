@@ -5,12 +5,16 @@ extends VBoxContainer
 @export var save_button_path: NodePath
 @export var load_button_path: NodePath
 @export var file_dialog_path: NodePath
+@export var maze_path: NodePath
+@export var generate_button_path: NodePath
 
 @onready var code_editor = get_node(code_editor_path)
 @onready var run_button = get_node(run_button_path)
 @onready var save_button = get_node(save_button_path)
 @onready var load_button = get_node(load_button_path)
 @onready var file_dialog = get_node(file_dialog_path)
+@onready var maze = get_node(maze_path)
+@onready var gen_button = get_node(generate_button_path)
 @onready var interpreter = preload("res://scripts/interpreter/mouse_interpreter.gd").new()
 
 @export var mouse_path: NodePath  # drag the mouse into this in the Inspector
@@ -26,6 +30,7 @@ func _ready():
 	save_button.pressed.connect(_on_save_pressed)
 	load_button.pressed.connect(_on_load_pressed)
 	file_dialog.file_selected.connect(_on_file_selected)
+	gen_button.pressed.connect(_on_generate_pressed)
 	
 func _on_run_pressed():
 	if interpreter.running:
@@ -89,3 +94,21 @@ func _on_Goal_body_entered(body):
 		print("🎉 Robot reached the goal!")
 		interpreter.stop()  # Or call from scene root/UI	
 		run_button.text = "RUN CODE"
+		
+func _on_generate_pressed():
+	# Stop any running code
+	if interpreter.running:
+		interpreter.stop()
+		run_button.text = "RUN CODE"
+
+	# Tell the maze to rebuild
+	maze.generate_maze()
+
+	# Wait a frame so CELL_SIZE can update
+	await get_tree().process_frame
+
+	# Re-compute cell size & reposition everything
+	maze._update_cell_size()
+	maze.mouse.resize_mouse(maze.CELL_SIZE)
+	maze._position_goal()
+	maze.queue_redraw()

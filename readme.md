@@ -77,7 +77,7 @@ It follows the Micromouse competition rules, where a robot must navigate through
         - [ ] SET VARNAME = {VAR1, VAR2}
 
 - [ ] Progress to optimistic movement
-    - [ ] POSITION keyword which just returns your current position (SET VARNAME = POSITION)
+    - [x] POSITION keyword which just returns your current position (SET VARNAME = POSITION)
     - [ ] IF VALUE IN LIST support with not variant
     - [ ] CLEAR LIST support to allow clearing of visited lists
 

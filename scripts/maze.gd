@@ -42,6 +42,7 @@ func _position_goal():
 		shape.extents = Vector2(CELL_SIZE/3, CELL_SIZE/3)
 
 func generate_maze():
+	_clear_old_walls()
 	grid.clear()
 	for y in range(HEIGHT):
 		var row = []
@@ -151,7 +152,13 @@ func draw_maze():
 	draw_circle(end_pos, CELL_SIZE * 0.2, Color(1,0,0))
 
 func _on_viewport_resized():
+	_clear_old_walls()
 	splitter.set_split_offset(get_viewport_rect().size.x / 2)
 	_update_cell_size()
 	mouse.resize_mouse(CELL_SIZE)
 	queue_redraw()
+	
+func _clear_old_walls():
+	for child in get_children():
+		if child is StaticBody2D:
+			child.queue_free()
