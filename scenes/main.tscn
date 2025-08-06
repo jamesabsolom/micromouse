@@ -102,6 +102,10 @@ text = "LOAD CODE"
 layout_mode = 2
 text = "NEW MAZE"
 
+[node name="Documentation" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "DOCS"
+
 [node name="FileDialog" type="FileDialog" parent="UI/HSplitContainer/Container2/VBoxContainer"]
 access = 2
 
