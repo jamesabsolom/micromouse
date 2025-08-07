@@ -12,6 +12,7 @@ extends VBoxContainer
 @export var debug_output_path: NodePath
 @export var maze_save_button_path: NodePath
 @export var maze_load_button_path: NodePath
+@export var docs_button_path: NodePath
 
 @onready var code_editor = get_node(code_editor_path)
 @onready var run_button = get_node(run_button_path)
@@ -25,6 +26,7 @@ extends VBoxContainer
 @onready var debug_output = get_node(debug_output_path)
 @onready var maze_save_button = get_node(maze_save_button_path)
 @onready var maze_load_button = get_node(maze_load_button_path)
+@onready var docs_button = get_node(docs_button_path)
 
 @onready var interpreter_array = preload("res://scripts/interpreter/mouse_interpreter.gd").new().init()
 @onready var interpreter = interpreter_array[0]
@@ -55,6 +57,7 @@ func _ready():
 	settings_button.pressed.connect(_on_settings_pressed)
 	maze_save_button.pressed.connect(_on_maze_save_pressed)
 	maze_load_button.pressed.connect(_on_maze_load_pressed)
+	docs_button.pressed.connect(_on_docs_pressed)
 	
 func _on_run_pressed():
 	if interpreter.running:
@@ -178,3 +181,6 @@ func _on_error(msg: String) -> void:
 	debug_output.scroll_vertical = debug_output.get_line_count()
 	
 	run_button.call_deferred("set_text", "RUN CODE")
+
+func _on_docs_pressed() -> void:
+	OS.shell_open("https://jamesabsolom.github.io/micromouse/")

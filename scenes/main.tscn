@@ -80,6 +80,7 @@ settings_popup_path = NodePath("../../../PopupPanel")
 debug_output_path = NodePath("DebugOutput")
 maze_save_button_path = NodePath("CenterContainer2/HBoxContainer/SaveMazeButton")
 maze_load_button_path = NodePath("CenterContainer2/HBoxContainer/LoadMazeButton")
+docs_button_path = NodePath("CenterContainer/HBoxContainer/Documentation")
 mouse_path = NodePath("../../../../Mouse")
 
 [node name="CodeEditor" type="TextEdit" parent="UI/HSplitContainer/Container2/VBoxContainer"]

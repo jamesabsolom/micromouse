@@ -56,7 +56,7 @@ It follows the Micromouse competition rules, where a robot must navigate through
 - [ ] Re-add only highlighting no structural text
 - [x] Hook up generate new maze button
 - [ ] Write documentation on available commands
-- [ ] Hook up documentation button
+- [x] Hook up documentation button
 
 - [ ] Basic commands which should definitely exist
     - [ ] Basic maths commands
