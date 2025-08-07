@@ -80,6 +80,10 @@ It follows the Micromouse competition rules, where a robot must navigate through
     - [x] POSITION keyword which just returns your current position (SET VARNAME = POSITION)
     - [ ] IF VALUE IN LIST support with not variant
     - [ ] CLEAR LIST support to allow clearing of visited lists
+    - [ ] Add a way to refer to a value in a list by index
+        - [ ] VAR TYPE VARNAME = LIST_VAR[INDEX]
+        - [ ] SET VARNAME = LIST_VAR[INDEX]
+        - [ ] IF VARNAME EQUALS LIST_VAR[INDEX] with not variant
 
 - [ ] Add function system
     - [ ] DEFINE FUNCTION keyword
@@ -87,6 +91,6 @@ It follows the Micromouse competition rules, where a robot must navigate through
 
 - [ ] Add a way to edit settings
     - [ ] Add a settings file (ini) which can be edited
-    - [ ] Add a settings button to the UI
-    - [ ] Hook up the settings button to open a menu
+    - [x] Add a settings button to the UI
+    - [x] Hook up the settings button to open a menu
     

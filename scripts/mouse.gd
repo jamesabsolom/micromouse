@@ -39,7 +39,7 @@ func _draw() -> void:
 
 func move_forward() -> void:
 	var direction = Vector2.RIGHT.rotated(rotation)
-	velocity = direction * Globals.move_speed
+	velocity = direction * move_speed
 	move_and_collide(velocity)
 
 func turn_left() -> void:
@@ -64,6 +64,7 @@ func read_sensor(name: String) -> bool:
 func reset() -> void:
 	position = start_position
 	rotation = start_rotation
+	move_speed = Globals.move_speed
 	
 func resize_mouse(cell_size: float):
 	var ratio = cell_size/50

@@ -5,6 +5,8 @@ class_name MouseInterpreter
 
 signal line_changed(line_number: int)
 signal finished
+signal error(message: String)
+
 var command_queue: Array = []
 var running := false
 var mouse: Node = null
@@ -14,36 +16,38 @@ var _run_id: int = 0
 var variables := {}  # Dictionary to hold all variables
 var loop_stack: Array = []
 
-var Helper : InterpreterHelper = preload("res://scripts/interpreter/interpreter_helper.gd").new().init(self)
-var Parser : InterpreterParser = preload("res://scripts/interpreter/parser.gd").new().init(self)
+var Helper : InterpreterHelper
+var Parser : InterpreterParser
+
+func init():
+	Helper = preload("res://scripts/interpreter/interpreter_helper.gd").new().init(self)
+	Parser = preload("res://scripts/interpreter/parser.gd").new().init(self)
+	return [self, Helper, Parser]
 
 func stop():
-	reset()
+	stop_flag = true            # tell all loops to break out
+	running = false
+	_run_id += 1
+	command_queue.clear()
 	emit_signal("line_changed", -1)
 	emit_signal("finished")
-	
-func reset():
-	# cancel any pending run immediately
-	_run_id += 1
-	running = false
-	stop_flag = false
-	command_queue.clear()
-	emit_signal("finished")  # so UI toggles back
 
 func run_script(script_text: String, mouse_ref: Node):#
 	mouse = mouse_ref
+	stop_flag = false
 	command_queue = Parser.parse_script(script_text)
 	if Globals.print_parse_tree:
 		print("=== PARSE TREE ===")
 		dump_commands(command_queue)
 		print("=== END PARSE TREE ===")
 	if command_queue.is_empty():
-		push_error("No commands to run.")
+		emit_signal("error", "No commands to run.")
 		return
 	var my_token := _run_id
 	running = true
 	stop_flag = false
 	await _run_command_list(command_queue, my_token)
+	stop()
 	emit_signal("finished")
 
 func _run_command_list(commands: Array, token: int) -> void:
@@ -76,8 +80,8 @@ func _run_command_list(commands: Array, token: int) -> void:
 				loop_stack.append({"type": "loop", "break": false, "continue": false})
 				while token == _run_id and running and not stop_flag:
 					if count > max_iterations:
-						push_error("Infinite loop detected — execution aborted.")
-						running = false
+						emit_signal("error", "Infinite loop detected — execution aborted.")
+						stop()
 						break
 					await _run_command_list(cmd["body"], token)
 					var loop_ctx = loop_stack[-1]
@@ -96,8 +100,8 @@ func _run_command_list(commands: Array, token: int) -> void:
 				loop_stack.append({"type": "while", "break": false, "continue": false})
 				while token == _run_id and running and not stop_flag and (mouse.read_sensor(sensor_name) != negate):
 					if wcount >= max_iterations:
-						push_error("Infinite loop detected — execution aborted.")
-						running = false
+						emit_signal("error", "Infinite loop detected — execution aborted.")
+						stop()
 						break
 					await _run_command_list(cmd["body"], token)
 					var loop_ctx = loop_stack[-1]
@@ -154,7 +158,7 @@ func _run_command_list(commands: Array, token: int) -> void:
 				loop_stack.append({"type": cmd["action"], "break": false, "continue": false})
 				while token == _run_id and running and not stop_flag and (Helper._compare_position(cmd["action"], Helper._resolve_position(target_str)) != neg):
 					if wcount >= max_iterations:
-						push_error("Infinite loop detected — execution aborted.")
+						emit_signal("error", "Infinite loop detected — execution aborted.")
 						running = false
 						break
 					for inner_cmd in cmd["body"]:
@@ -179,7 +183,7 @@ func _run_command_list(commands: Array, token: int) -> void:
 				# re-resolve on each iteration
 				while token == _run_id and running and not stop_flag and (Helper._is_centered(Helper._resolve_position(target_str)) != neg):
 					if wcount >= max_iterations:
-						push_error("Infinite loop detected — execution aborted.")
+						emit_signal("error", "Infinite loop detected — execution aborted.")
 						running = false
 						break
 					for inner_cmd in cmd["body"]:
@@ -205,11 +209,11 @@ func _run_command_list(commands: Array, token: int) -> void:
 				var list_name = cmd["list_name"]
 				var var_name = cmd["var_name"]
 				if not variables.has(list_name):
-					push_error("List '%s' not declared" % list_name)
+					emit_signal("error", "List '%s' not declared" % list_name)
 					return
 				var list_data = variables[list_name]
 				if typeof(list_data.value) != TYPE_ARRAY:
-					push_error("Variable '%s' is not a list" % list_name)
+					emit_signal("error", "Variable '%s' is not a list" % list_name)
 					return
 				loop_stack.append({"type": "for_loop", "break": false, "continue": false})
 				for item in list_data.value:
@@ -229,14 +233,14 @@ func _run_command_list(commands: Array, token: int) -> void:
 
 			"break":
 				if loop_stack.is_empty():
-					push_error("BREAK used outside of loop")
+					emit_signal("error", "BREAK used outside of loop")
 					return
 				loop_stack[-1]["break"] = true
 				return
 
 			"continue":
 				if loop_stack.is_empty():
-					push_error("CONTINUE used outside of loop")
+					emit_signal("error", "CONTINUE used outside of loop")
 					return
 				loop_stack[-1]["continue"] = true
 				return
@@ -246,19 +250,19 @@ func _run_command_list(commands: Array, token: int) -> void:
 				var var_type = cmd["type"]
 				var value = Helper._convert_value(var_type, cmd["value"])
 				if value == null:
-					push_error("Invalid value for variable %s of type %s" % [name, var_type])
+					emit_signal("error", "Invalid value for variable %s of type %s" % [name, var_type])
 				else:
 					variables[name] = { "type": var_type, "value": value }
 
 			"set_var":
 				var name = cmd["name"]
 				if not variables.has(name):
-					push_error("Variable '%s' not declared" % name)
+					emit_signal("error", "Variable '%s' not declared" % name)
 					return
 				var var_type = variables[name]["type"]
 				var value = Helper._convert_value(var_type, cmd["value"])
 				if value == null:
-					push_error("Invalid value for %s of type %s" % [name, var_type])
+					emit_signal("error", "Invalid value for %s of type %s" % [name, var_type])
 				else:
 					variables[name]["value"] = value
 					
@@ -267,14 +271,14 @@ func _run_command_list(commands: Array, token: int) -> void:
 				var var_type = cmd["type"]
 				var values = Helper._convert_list_value(var_type, cmd["value"])
 				if values == null:
-					push_error("Invalid list value for %s of type %s" % [name, var_type])
+					emit_signal("error", "Invalid list value for %s of type %s" % [name, var_type])
 				else:
 					variables[name] = { "type": "LIST_" + var_type, "value": values }
 
 			"set_var":
 				var name = cmd["name"]
 				if not variables.has(name):
-					push_error("Variable '%s' not declared" % name)
+					emit_signal("error", "Variable '%s' not declared" % name)
 					return
 				var var_type = variables[name]["type"]
 				var value
@@ -283,22 +287,22 @@ func _run_command_list(commands: Array, token: int) -> void:
 				else:
 					value = Helper._convert_value(var_type, cmd["value"])
 				if value == null:
-					push_error("Invalid value for %s of type %s" % [name, var_type])
+					emit_signal("error", "Invalid value for %s of type %s" % [name, var_type])
 				else:
 					variables[name]["value"] = value
 					
 			"append_var":
 				var name = cmd["name"]
 				if not variables.has(name):
-					push_error("Cannot append: variable '%s' not found" % name)
+					emit_signal("error", "Cannot append: variable '%s' not found" % name)
 					return
 				if not variables[name]["type"].begins_with("LIST_"):
-					push_error("Cannot append to non-list variable '%s'" % name)
+					emit_signal("error", "Cannot append to non-list variable '%s'" % name)
 					return
 				var base_type = variables[name]["type"].replace("LIST_", "")
 				var value = Helper._resolve_value(base_type, cmd["value"])
 				if value == null:
-					push_error("Invalid value to append: %s" % cmd["value"])
+					emit_signal("error", "Invalid value to append: %s" % cmd["value"])
 				else:
 					variables[name]["value"].append(value)
 					

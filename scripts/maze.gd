@@ -162,3 +162,64 @@ func _clear_old_walls():
 	for child in get_children():
 		if child is StaticBody2D:
 			child.queue_free()
+			
+func save_maze_text(path: String) -> void:
+	var file = FileAccess.open(path, FileAccess.WRITE)
+	if not file:
+		push_error("Could not open %s for writing" % path)
+		return
+
+	# First line: dimensions
+	file.store_line("%d,%d" % [WIDTH, HEIGHT])
+
+	# Then HEIGHT lines, each with WIDTH comma-sep bitmasks
+	for y in range(HEIGHT):
+		var row_vals = []
+		for x in range(WIDTH):
+			var mask = 0
+			var walls = grid[y][x]["walls"]
+			if "top"    in walls: mask |= 1
+			if "right"  in walls: mask |= 2
+			if "bottom" in walls: mask |= 4
+			if "left"   in walls: mask |= 8
+			row_vals.append(str(mask))
+		# ← use the comma string to join the array
+		file.store_line(",".join(row_vals))
+	file.close()
+
+func load_maze_text(path: String) -> void:
+	var file = FileAccess.open(path, FileAccess.READ)
+	if not file:
+		push_error("Could not open %s for reading" % path)
+		return
+
+	var header = file.get_line().split(",", false)
+	var w = int(header[0])
+	var h = int(header[1])
+	# you could even resize WIDTH/HEIGHT here if you allow variable sizes
+
+	_clear_old_walls()
+	grid.clear()
+
+	for y in range(h):
+		var row = []
+		var parts = file.get_line().split(",", false)
+		for x in range(w):
+			var mask = int(parts[x])
+			var walls = []
+			if mask & 1: walls.append("top")
+			if mask & 2: walls.append("right")
+			if mask & 4: walls.append("bottom")
+			if mask & 8: walls.append("left")
+			row.append({
+				"grid_pos": Vector2i(x, y),
+				"walls": walls
+			})
+		grid.append(row)
+
+	file.close()
+	# then the usual recalc:
+	_update_cell_size()
+	queue_redraw()
+	_position_goal()
+	mouse.resize_mouse(CELL_SIZE)

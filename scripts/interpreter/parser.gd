@@ -3,6 +3,9 @@ extends Node
 
 class_name InterpreterParser
 
+signal finished
+signal error(message: String)
+
 var interpreter  # will store reference to the parent
 
 const BLOCK_TYPES = ["repeat", "loop", "while", "while_facing", "while_on", "while_centered", "for_loop", "if", "if_facing", "if_on"]
@@ -71,7 +74,7 @@ func parse_script(script: String) -> Array:
 		elif content.begins_with("FOR ") and " IN " in content:
 			var pieces = content.substr(4).split(" IN ", false)
 			if pieces.size() != 2:
-				push_error("Invalid FOR syntax: " + trimmed)
+				emit_signal("error", "Invalid FOR syntax: " + trimmed)
 				return []
 			var var_name = pieces[0].strip_edges().to_lower()
 			var list_name = pieces[1].strip_edges().to_lower()
@@ -165,7 +168,7 @@ func parse_script(script: String) -> Array:
 #--------------------------------------------------------------------------------
 		elif content == "ELSE":
 			if stack.is_empty() or stack[-1]["action"] not in ["if", "if_facing", "if_on"]:
-				push_error("ELSE without matching IF")
+				emit_signal("error", "ELSE without matching IF")
 				return []
 			# Switch to else body for this if block
 			stack[-1]["state"] = "else"
@@ -185,13 +188,13 @@ func parse_script(script: String) -> Array:
 			var decl_str = trimmed.substr(len("VAR "))
 			var eq_index = decl_str.find("=")
 			if eq_index == -1:
-				push_error("Missing '=' in VAR statement")
+				emit_signal("error", "Missing '=' in VAR statement")
 				return []
 			var declaration = decl_str.substr(0, eq_index).strip_edges()
 			var value_str = decl_str.substr(eq_index + 1).strip_edges()
 			var parts = declaration.split(" ", false)
 			if parts.size() != 2:
-				push_error("Invalid VAR syntax: " + trimmed)
+				emit_signal("error", "Invalid VAR syntax: " + trimmed)
 				return []
 
 			var var_type = parts[0].to_upper()
@@ -209,7 +212,7 @@ func parse_script(script: String) -> Array:
 			var decl_str := trimmed.substr(len("SET ")).strip_edges()
 			var eq_index := decl_str.find("=")
 			if eq_index == -1:
-				push_error("Missing '=' in SET statement")
+				emit_signal("error", "Missing '=' in SET statement")
 				return []
 
 			var var_name := decl_str.substr(0, eq_index).strip_edges().to_lower()
@@ -227,13 +230,13 @@ func parse_script(script: String) -> Array:
 			var decl_str = trimmed.substr(len("LIST "))
 			var eq_index = decl_str.find("=")
 			if eq_index == -1:
-				push_error("Missing '=' in LIST statement")
+				emit_signal("error", "Missing '=' in LIST statement")
 				return []
 			var declaration = decl_str.substr(0, eq_index).strip_edges()
 			var value_str = decl_str.substr(eq_index + 1).strip_edges()
 			var parts = declaration.split(" ", false)
 			if parts.size() != 2:
-				push_error("Invalid LIST syntax: " + trimmed)
+				emit_signal("error", "Invalid LIST syntax: " + trimmed)
 				return []
 			var var_type = parts[0].to_upper()
 			var var_name = parts[1].to_lower()
@@ -250,7 +253,7 @@ func parse_script(script: String) -> Array:
 			var append_parts = trimmed.substr(len("APPEND ")).strip_edges()
 			var parts = append_parts.split(" ", false)
 			if parts.size() != 2:
-				push_error("Invalid APPEND syntax: " + trimmed)
+				emit_signal("error", "Invalid APPEND syntax: " + trimmed)
 				return []
 			var cmd = {
 				"action": "append_var",
@@ -266,9 +269,7 @@ func parse_script(script: String) -> Array:
 			parent_body.append({"action": "break", "line": i})
 		elif content == "CONTINUE":
 			parent_body.append({"action": "continue", "line": i})
-
-
 		else:
-			push_error("Unknown command: %s" % trimmed)
+			emit_signal("error", "Unknown command: %s" % trimmed)
 			return []
 	return root_commands

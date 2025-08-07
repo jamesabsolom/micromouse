@@ -3,6 +3,9 @@ extends Node
 
 class_name InterpreterHelper
 
+signal finished
+signal error(message: String)
+
 var interpreter  # will store reference to the parent
 
 func init(interpreter_ref):

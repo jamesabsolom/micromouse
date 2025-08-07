@@ -9,6 +9,9 @@ extends VBoxContainer
 @export var generate_button_path: NodePath
 @export var settings_button_path: NodePath
 @export var settings_popup_path: NodePath
+@export var debug_output_path: NodePath
+@export var maze_save_button_path: NodePath
+@export var maze_load_button_path: NodePath
 
 @onready var code_editor = get_node(code_editor_path)
 @onready var run_button = get_node(run_button_path)
@@ -19,29 +22,46 @@ extends VBoxContainer
 @onready var gen_button = get_node(generate_button_path)
 @onready var settings_button = get_node(settings_button_path)
 @onready var settings_popup = get_node(settings_popup_path)
-@onready var interpreter = preload("res://scripts/interpreter/mouse_interpreter.gd").new()
+@onready var debug_output = get_node(debug_output_path)
+@onready var maze_save_button = get_node(maze_save_button_path)
+@onready var maze_load_button = get_node(maze_load_button_path)
+
+@onready var interpreter_array = preload("res://scripts/interpreter/mouse_interpreter.gd").new().init()
+@onready var interpreter = interpreter_array[0]
+@onready var interpreter_helper = interpreter_array[1]
+@onready var interpreter_parser = interpreter_array[2]
 
 @export var mouse_path: NodePath  # drag the mouse into this in the Inspector
 
 var last_highlighted_line := -1
-var is_saving := false
+var is_saving_script := false
+var is_saving_maze := false
+var is_loading_maze := false
 
 func _ready():
 	add_child(interpreter)
+	interpreter.connect("error", Callable(self, "_on_error"))
+	interpreter_helper.connect("error", Callable(self, "_on_error"))
+	interpreter_parser.connect("error", Callable(self, "_on_error"))
 	interpreter.line_changed.connect(_on_line_changed)
 	interpreter.finished.connect(_on_execution_finished)
+	interpreter_parser.finished.connect(_on_execution_finished)
+	interpreter_helper.finished.connect(_on_execution_finished)
 	run_button.pressed.connect(_on_run_pressed)
 	save_button.pressed.connect(_on_save_pressed)
 	load_button.pressed.connect(_on_load_pressed)
 	file_dialog.file_selected.connect(_on_file_selected)
 	gen_button.pressed.connect(_on_generate_pressed)
 	settings_button.pressed.connect(_on_settings_pressed)
+	maze_save_button.pressed.connect(_on_maze_save_pressed)
+	maze_load_button.pressed.connect(_on_maze_load_pressed)
 	
 func _on_run_pressed():
 	if interpreter.running:
 		interpreter.stop()
 		run_button.text = "RUN CODE"
 	else:
+		debug_output.text = ""
 		var code = code_editor.text
 		var mouse = get_node(mouse_path)
 		mouse.reset()
@@ -75,24 +95,53 @@ func _on_execution_finished():
 	run_button.text = "RUN CODE"
 		
 func _on_save_pressed():
-	is_saving = true
+	is_saving_script = true
+	is_saving_maze   = false
+	is_loading_maze  = false
+	file_dialog.access = FileDialog.ACCESS_FILESYSTEM
 	file_dialog.file_mode = FileDialog.FILE_MODE_SAVE_FILE
 	file_dialog.popup_centered()
 
 func _on_load_pressed():
-	is_saving = false
+	is_saving_script = false
+	is_saving_maze   = false
+	is_loading_maze  = false
+	file_dialog.access = FileDialog.ACCESS_FILESYSTEM
+	file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	file_dialog.popup_centered()
+
+func _on_maze_save_pressed():
+	is_saving_script = false
+	is_saving_maze   = true
+	is_loading_maze  = false
+	file_dialog.access = FileDialog.ACCESS_FILESYSTEM
+	file_dialog.file_mode = FileDialog.FILE_MODE_SAVE_FILE
+	file_dialog.popup_centered()
+
+func _on_maze_load_pressed():
+	is_saving_script = false
+	is_saving_maze   = false
+	is_loading_maze  = true
+	file_dialog.access = FileDialog.ACCESS_FILESYSTEM
 	file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
 	file_dialog.popup_centered()
 
 func _on_file_selected(path: String):
-	if is_saving:
-		var file = FileAccess.open(path, FileAccess.WRITE)
-		if file:
-			file.store_string(code_editor.text)
+	if is_saving_script:
+		var f = FileAccess.open(path, FileAccess.WRITE)
+		if f:
+			f.store_string(code_editor.text)
+			f.close()
+	elif is_saving_maze:
+		maze.save_maze_text(path)
+	elif is_loading_maze:
+		maze.load_maze_text(path)
 	else:
-		var file = FileAccess.open(path, FileAccess.READ)
-		if file:
-			code_editor.text = file.get_as_text()
+		# script load
+		var f = FileAccess.open(path, FileAccess.READ)
+		if f:
+			code_editor.text = f.get_as_text()
+			f.close()
 			
 func _on_Goal_body_entered(body):
 	if body.name == "Mouse":
@@ -121,3 +170,11 @@ func _on_generate_pressed():
 func _on_settings_pressed():
 	# Show the popup (it will read current Globals in _ready())
 	settings_popup.popup_centered()
+	
+func _on_error(msg: String) -> void:
+	# append to the end of the existing text
+	debug_output.text += "Error: %s\n" % msg
+	# scroll all the way down
+	debug_output.scroll_vertical = debug_output.get_line_count()
+	
+	run_button.call_deferred("set_text", "RUN CODE")
