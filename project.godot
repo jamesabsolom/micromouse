@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="micromouse"
-run/main_scene="uid://bibm3u8hycr37"
+run/main_scene="uid://dttgr46ysrw0i"
 config/features=PackedStringArray("4.4", "Forward Plus")
 config/icon="res://icon.svg"
 

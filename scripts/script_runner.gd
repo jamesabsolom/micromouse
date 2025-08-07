@@ -13,6 +13,7 @@ extends VBoxContainer
 @export var maze_save_button_path: NodePath
 @export var maze_load_button_path: NodePath
 @export var docs_button_path: NodePath
+@export var exit_button_path: NodePath
 
 @onready var code_editor = get_node(code_editor_path)
 @onready var run_button = get_node(run_button_path)
@@ -27,6 +28,7 @@ extends VBoxContainer
 @onready var maze_save_button = get_node(maze_save_button_path)
 @onready var maze_load_button = get_node(maze_load_button_path)
 @onready var docs_button = get_node(docs_button_path)
+@onready var exit_button = get_node(exit_button_path)
 
 @onready var interpreter_array = preload("res://scripts/interpreter/mouse_interpreter.gd").new().init()
 @onready var interpreter = interpreter_array[0]
@@ -58,6 +60,7 @@ func _ready():
 	maze_save_button.pressed.connect(_on_maze_save_pressed)
 	maze_load_button.pressed.connect(_on_maze_load_pressed)
 	docs_button.pressed.connect(_on_docs_pressed)
+	exit_button.pressed.connect(_on_exit_pressed)
 	
 func _on_run_pressed():
 	if interpreter.running:
@@ -68,7 +71,7 @@ func _on_run_pressed():
 		var code = code_editor.text
 		var mouse = get_node(mouse_path)
 		mouse.reset()
-		await get_tree().create_timer(0.5).timeout
+		await get_tree().create_timer(0.2).timeout
 		interpreter.run_script(code, mouse)
 		run_button.text = "STOP"
 	
@@ -184,3 +187,6 @@ func _on_error(msg: String) -> void:
 
 func _on_docs_pressed() -> void:
 	OS.shell_open("https://jamesabsolom.github.io/micromouse/")
+
+func _on_exit_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")

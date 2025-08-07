@@ -1,0 +1,104 @@
+[gd_scene load_steps=5 format=3 uid="uid://dttgr46ysrw0i"]
+
+[ext_resource type="Texture2D" uid="uid://bis0q868fj4dq" path="res://resources/logo.png" id="1_l6cm7"]
+[ext_resource type="Script" uid="uid://c2h2g3o2aollm" path="res://scripts/UI/main_menu.gd" id="2_ekxnf"]
+[ext_resource type="VideoStream" path="res://resources/output.ogv" id="3_bqqt6"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_ekxnf"]
+font_size = 48
+
+[node name="MainMenu" type="Node2D"]
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="HSplitContainer" type="HSplitContainer" parent="CanvasLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Control" type="Control" parent="CanvasLayer/HSplitContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ColorRect" type="ColorRect" parent="CanvasLayer/HSplitContainer/Control"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.372549, 0.733333, 0.592157, 1)
+
+[node name="VSplitContainer" type="VSplitContainer" parent="CanvasLayer/HSplitContainer/Control"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TextureRect" type="TextureRect" parent="CanvasLayer/HSplitContainer/Control/VSplitContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 3
+texture = ExtResource("1_l6cm7")
+expand_mode = 2
+stretch_mode = 4
+
+[node name="CenterContainer" type="CenterContainer" parent="CanvasLayer/HSplitContainer/Control/VSplitContainer"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/HSplitContainer/Control/VSplitContainer/CenterContainer"]
+layout_mode = 2
+script = ExtResource("2_ekxnf")
+sandbox_button_path = NodePath("Sandbox")
+
+[node name="Label" type="Label" parent="CanvasLayer/HSplitContainer/Control/VSplitContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+text = "Micromouse Simulator"
+label_settings = SubResource("LabelSettings_ekxnf")
+
+[node name="Sandbox" type="Button" parent="CanvasLayer/HSplitContainer/Control/VSplitContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+text = "Sandbox"
+
+[node name="Campaign" type="Button" parent="CanvasLayer/HSplitContainer/Control/VSplitContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+text = "Campaign"
+
+[node name="Button" type="Button" parent="CanvasLayer/HSplitContainer/Control/VSplitContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+text = "Exit"
+
+[node name="Label2" type="Label" parent="CanvasLayer/HSplitContainer/Control/VSplitContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label3" type="Label" parent="CanvasLayer/HSplitContainer/Control/VSplitContainer/CenterContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Control2" type="Control" parent="CanvasLayer/HSplitContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VideoStreamPlayer" type="VideoStreamPlayer" parent="CanvasLayer/HSplitContainer/Control2"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -324.0
+offset_top = -323.5
+offset_right = 324.0
+offset_bottom = 323.5
+grow_horizontal = 2
+grow_vertical = 2
+stream = ExtResource("3_bqqt6")
+volume_db = -80.0
+autoplay = true
+loop = true
+buffering_msec = 1000
