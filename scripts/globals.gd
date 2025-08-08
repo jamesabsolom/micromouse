@@ -15,7 +15,8 @@ var repeat_delay := 0
 
 ## GLOBAL VARIABLES ##
 var mouse_ref = null
-var campaign_completed = []
+# key = level number (int), value = time in seconds (float)
+var campaign_results := {}
 var incomplete_color = Color8(220, 0, 1, 255)
 var complete_color = Color8(41, 176, 111, 255)
 var campaign_level = ""

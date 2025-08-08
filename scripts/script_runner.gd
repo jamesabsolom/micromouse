@@ -45,6 +45,7 @@ extends VBoxContainer
 @onready var back_button = get_node(back_button_path)
 @onready var close_button = get_node(close_button_path)
 
+@onready var progress_io = load("res://scripts/progress_io.gd")
 @onready var interpreter_array = preload("res://scripts/interpreter/mouse_interpreter.gd").new().init()
 @onready var interpreter = interpreter_array[0]
 @onready var interpreter_helper = interpreter_array[1]
@@ -179,14 +180,23 @@ func _on_file_selected(path: String):
 			
 func _on_Goal_body_entered(body):
 	if body.name == "Mouse" and interpreter.running:
-		print("🎉 Robot reached the goal!")
-		interpreter.stop()  # Or call from scene root/UI	
+		interpreter.stop()
 		run_button.text = "RUN CODE"
+
 		if campaign_mode:
-			if Globals.campaign_level_num not in Globals.campaign_completed:
-				Globals.campaign_completed.append(Globals.campaign_level_num)
+			# grab the float seconds from your TimeHolder
+			var t = time_holder.get_elapsed_time()
+			# store it under the current level num
+			if Globals.campaign_level_num in Globals.campaign_results:
+				if Globals.campaign_results[ Globals.campaign_level_num ] > t:
+					Globals.campaign_results[ Globals.campaign_level_num ] = t
+			else:
+				Globals.campaign_results[ Globals.campaign_level_num ] = t
+			progress_io.record(Globals.campaign_level_num, t, true)
+
 		time_holder.stop()
 		win_popup.popup_centered()
+
 			
 func _on_generate_pressed():
 	# If code running, stop it...

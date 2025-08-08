@@ -19,3 +19,6 @@ func start() -> void:
 func stop() -> void:
 	is_stopped = true
 	self.text = str(time_elapsed).pad_decimals(2) + " seconds"
+	
+func get_elapsed_time() -> float:
+	return time_elapsed
