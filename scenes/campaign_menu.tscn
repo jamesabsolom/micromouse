@@ -1,0 +1,110 @@
+[gd_scene load_steps=3 format=3 uid="uid://c37y72yhgp83i"]
+
+[ext_resource type="Script" uid="uid://cywhnkh5fvxkk" path="res://scripts/UI/campaign_button.gd" id="1_ed861"]
+[ext_resource type="Script" uid="uid://0q4me241wp0i" path="res://scripts/UI/back_button.gd" id="2_rt6n7"]
+
+[node name="CampaignMenu" type="Node2D"]
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 10.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Level 1" type="Control" parent="CanvasLayer/VBoxContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("1_ed861")
+background_color_path = NodePath("Level 1 Rect")
+select_button_path = NodePath("CenterContainer/Level 1 Button")
+level_num = 1
+campaign_level_address = "res://campaign_levels/campaign_1.txt"
+
+[node name="Level 1 Rect" type="ColorRect" parent="CanvasLayer/VBoxContainer/HBoxContainer/VBoxContainer/Level 1"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CenterContainer" type="CenterContainer" parent="CanvasLayer/VBoxContainer/HBoxContainer/VBoxContainer/Level 1"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Level 1 Button" type="Button" parent="CanvasLayer/VBoxContainer/HBoxContainer/VBoxContainer/Level 1/CenterContainer"]
+layout_mode = 2
+text = "Level 1"
+expand_icon = true
+
+[node name="Level 2" type="Control" parent="CanvasLayer/VBoxContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("1_ed861")
+background_color_path = NodePath("Level 2 Rect")
+select_button_path = NodePath("CenterContainer/Level 2 Button")
+level_num = 2
+campaign_level_address = "res://campaign_levels/campaign_2.txt"
+
+[node name="Level 2 Rect" type="ColorRect" parent="CanvasLayer/VBoxContainer/HBoxContainer/VBoxContainer/Level 2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CenterContainer" type="CenterContainer" parent="CanvasLayer/VBoxContainer/HBoxContainer/VBoxContainer/Level 2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Level 2 Button" type="Button" parent="CanvasLayer/VBoxContainer/HBoxContainer/VBoxContainer/Level 2/CenterContainer"]
+layout_mode = 2
+text = "Level 2"
+expand_icon = true
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="CanvasLayer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBoxContainer3" type="VBoxContainer" parent="CanvasLayer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ColorRect" type="ColorRect" parent="CanvasLayer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+color = Color(0.141176, 0.141176, 0.141176, 1)
+
+[node name="CenterContainer" type="CenterContainer" parent="CanvasLayer/VBoxContainer/ColorRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Button" type="Button" parent="CanvasLayer/VBoxContainer/ColorRect/CenterContainer"]
+layout_mode = 2
+text = "Back"
+script = ExtResource("2_rt6n7")

@@ -1,7 +1,7 @@
 extends Node2D
 
-const WIDTH = 11
-const HEIGHT = 11
+@export var WIDTH: int = 11
+@export var HEIGHT: int = 11
 
 var CELL_SIZE: float
 var grid = []
@@ -11,6 +11,7 @@ var end = Vector2(WIDTH - 1, HEIGHT - 1)
 @export var background_path: NodePath
 @export var mouse_path: NodePath
 @export var splitter_path: NodePath
+@export var campaign_mode: bool
 
 @onready var goal = $Goal
 @onready var background = get_node(background_path) as ColorRect
@@ -18,7 +19,10 @@ var end = Vector2(WIDTH - 1, HEIGHT - 1)
 @onready var splitter = get_node(splitter_path)
 
 func _ready():
-	generate_maze()
+	if campaign_mode:
+		load_maze_text(Globals.campaign_level)
+	else:
+		generate_maze()
 	# Wait for layout then set split and cell size
 	await get_tree().process_frame
 	splitter.set_split_offset(get_viewport_rect().size.x / 2)
@@ -42,6 +46,7 @@ func _position_goal():
 		shape.extents = Vector2(CELL_SIZE/3, CELL_SIZE/3)
 
 func generate_maze():
+	end = Vector2(WIDTH - 1, HEIGHT - 1)
 	_clear_old_walls()
 	grid.clear()
 	for y in range(HEIGHT):
@@ -169,10 +174,15 @@ func save_maze_text(path: String) -> void:
 		push_error("Could not open %s for writing" % path)
 		return
 
-	# First line: dimensions
+	# 1) dimensions
 	file.store_line("%d,%d" % [WIDTH, HEIGHT])
+	# 2) start & end
+	file.store_line("%d,%d,%d,%d" % [
+		int(start.x), int(start.y),
+		int(end.x),   int(end.y)
+	])
 
-	# Then HEIGHT lines, each with WIDTH comma-sep bitmasks
+	# 3) grid bitmasks
 	for y in range(HEIGHT):
 		var row_vals = []
 		for x in range(WIDTH):
@@ -183,8 +193,8 @@ func save_maze_text(path: String) -> void:
 			if "bottom" in walls: mask |= 4
 			if "left"   in walls: mask |= 8
 			row_vals.append(str(mask))
-		# ← use the comma string to join the array
 		file.store_line(",".join(row_vals))
+
 	file.close()
 
 func load_maze_text(path: String) -> void:
@@ -193,18 +203,23 @@ func load_maze_text(path: String) -> void:
 		push_error("Could not open %s for reading" % path)
 		return
 
+	# 1) dims
 	var header = file.get_line().split(",", false)
-	var w = int(header[0])
-	var h = int(header[1])
-	# you could even resize WIDTH/HEIGHT here if you allow variable sizes
+	WIDTH = int(header[0])
+	HEIGHT = int(header[1])
 
+	# 2) start & end
+	var se = file.get_line().split(",", false)
+	start = Vector2(int(se[0]), int(se[1]))
+	end   = Vector2(int(se[2]), int(se[3]))
+
+	# now rebuild grid…
 	_clear_old_walls()
 	grid.clear()
-
-	for y in range(h):
+	for y in range(HEIGHT):
 		var row = []
 		var parts = file.get_line().split(",", false)
-		for x in range(w):
+		for x in range(WIDTH):
 			var mask = int(parts[x])
 			var walls = []
 			if mask & 1: walls.append("top")
@@ -216,9 +231,9 @@ func load_maze_text(path: String) -> void:
 				"walls": walls
 			})
 		grid.append(row)
-
 	file.close()
-	# then the usual recalc:
+
+	# reposition everything now that start/end may have changed
 	_update_cell_size()
 	queue_redraw()
 	_position_goal()

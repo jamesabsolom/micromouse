@@ -1,13 +1,14 @@
 site_name: Micromouse Docs
-docs_dir: docs
+docs_dir: site
 
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
-  - Reference:
-      - Movement: reference/movement.md
-      - Variables: reference/variables.md
-      - Control Flow: reference/controlflow.md
+  - Commands:
+      - Movement: commands/movement.md
+      - Loop : commands/loop.md
+      - Repeat: commands/repeat.md
+      - Break: commands/break.md
 
 theme:
   name: material

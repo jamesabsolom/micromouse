@@ -1,0 +1,364 @@
+[gd_scene load_steps=8 format=3 uid="uid://bibm3u8hycr37"]
+
+[ext_resource type="PackedScene" uid="uid://bic00e40n4ase" path="res://scenes/mouse.tscn" id="1_j6lu3"]
+[ext_resource type="Script" uid="uid://b717xco5do5q7" path="res://scripts/maze.gd" id="2_tpt06"]
+[ext_resource type="Script" uid="uid://bow6ndxsal3t1" path="res://scripts/script_runner.gd" id="3_16ffl"]
+[ext_resource type="Script" uid="uid://ddhd8e5ap4106" path="res://scripts/UI/settings_popup.gd" id="4_17a3a"]
+[ext_resource type="Script" uid="uid://c5eg1n2umndg8" path="res://scripts/stopwatch.gd" id="5_tpt06"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_sugp2"]
+
+[sub_resource type="Theme" id="Theme_16ffl"]
+Label/font_sizes/font_size = 32
+
+[node name="Main" type="Node2D"]
+
+[node name="Mouse" parent="." instance=ExtResource("1_j6lu3")]
+z_index = 6
+position = Vector2(25, 23)
+maze_path = NodePath("../UI/HSplitContainer/Container/Maze")
+
+[node name="UI" type="CanvasLayer" parent="."]
+layer = -1
+
+[node name="HSplitContainer" type="HSplitContainer" parent="UI"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 2
+size_flags_vertical = 10
+split_offset = 560
+dragging_enabled = false
+
+[node name="Container" type="Control" parent="UI/HSplitContainer"]
+layout_mode = 2
+
+[node name="Maze" type="Node2D" parent="UI/HSplitContainer/Container"]
+z_index = 4
+z_as_relative = false
+script = ExtResource("2_tpt06")
+background_path = NodePath("../bkgrnd")
+mouse_path = NodePath("../../../../Mouse")
+splitter_path = NodePath("../..")
+
+[node name="Goal" type="Area2D" parent="UI/HSplitContainer/Container/Maze"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="UI/HSplitContainer/Container/Maze/Goal"]
+shape = SubResource("CircleShape2D_sugp2")
+
+[node name="bkgrnd" type="ColorRect" parent="UI/HSplitContainer/Container"]
+z_index = -10
+z_as_relative = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.142858, 0.142858, 0.142858, 1)
+
+[node name="Container2" type="Control" parent="UI/HSplitContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/HSplitContainer/Container2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_stretch_ratio = 0.0
+script = ExtResource("3_16ffl")
+code_editor_path = NodePath("CodeEditor")
+run_button_path = NodePath("CenterContainer/HBoxContainer/RunButton")
+save_button_path = NodePath("CenterContainer/HBoxContainer/SaveButton")
+load_button_path = NodePath("CenterContainer/HBoxContainer/LoadButton")
+file_dialog_path = NodePath("FileDialog")
+maze_path = NodePath("../../Container/Maze")
+generate_button_path = NodePath("CenterContainer2/HBoxContainer/MazeButton")
+settings_button_path = NodePath("CenterContainer2/HBoxContainer/SettingsButton")
+settings_popup_path = NodePath("../../../SettingsPopup")
+debug_output_path = NodePath("DebugOutput")
+maze_save_button_path = NodePath("CenterContainer2/HBoxContainer/SaveMazeButton")
+maze_load_button_path = NodePath("CenterContainer2/HBoxContainer/LoadMazeButton")
+docs_button_path = NodePath("CenterContainer/HBoxContainer/Documentation")
+exit_button_path = NodePath("CenterContainer2/HBoxContainer/ExitButton")
+new_maze_dialog_path = NodePath("../../../NewMazeDialog")
+spinbox_w_path = NodePath("../../../NewMazeDialog/VBoxContainer2/HBoxContainer/SpinBoxWidth")
+spinbox_h_path = NodePath("../../../NewMazeDialog/VBoxContainer2/HBoxContainer2/SpinBoxHeight")
+win_popup_path = NodePath("../../../WinPopup")
+time_holder_path = NodePath("../../../WinPopup/Control/CenterContainer/VBoxContainer/CenterContainer/HBoxContainer/time")
+back_button_path = NodePath("../../../WinPopup/Control/CenterContainer/VBoxContainer/CenterContainer2/HBoxContainer/back_button")
+close_button_path = NodePath("../../../WinPopup/Control/CenterContainer/VBoxContainer/CenterContainer2/HBoxContainer/close_button")
+mouse_path = NodePath("../../../../Mouse")
+
+[node name="CodeEditor" type="TextEdit" parent="UI/HSplitContainer/Container2/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 5.0
+placeholder_text = "<Your Code Goes Here>"
+scroll_smooth = true
+
+[node name="CenterContainer" type="CenterContainer" parent="UI/HSplitContainer/Container2/VBoxContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UI/HSplitContainer/Container2/VBoxContainer/CenterContainer"]
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="RunButton" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/CenterContainer/HBoxContainer"]
+layout_mode = 2
+text = "RUN CODE"
+
+[node name="SaveButton" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/CenterContainer/HBoxContainer"]
+layout_mode = 2
+text = "SAVE CODE"
+
+[node name="LoadButton" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/CenterContainer/HBoxContainer"]
+layout_mode = 2
+text = "LOAD CODE"
+
+[node name="Documentation" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/CenterContainer/HBoxContainer"]
+layout_mode = 2
+text = "DOCS"
+
+[node name="CenterContainer2" type="CenterContainer" parent="UI/HSplitContainer/Container2/VBoxContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UI/HSplitContainer/Container2/VBoxContainer/CenterContainer2"]
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="MazeButton" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/CenterContainer2/HBoxContainer"]
+layout_mode = 2
+text = "NEW MAZE"
+
+[node name="SaveMazeButton" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/CenterContainer2/HBoxContainer"]
+layout_mode = 2
+text = "SAVE MAZE"
+
+[node name="LoadMazeButton" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/CenterContainer2/HBoxContainer"]
+layout_mode = 2
+text = "LOAD MAZE"
+
+[node name="SettingsButton" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/CenterContainer2/HBoxContainer"]
+layout_mode = 2
+text = "SETTINGS"
+
+[node name="ExitButton" type="Button" parent="UI/HSplitContainer/Container2/VBoxContainer/CenterContainer2/HBoxContainer"]
+layout_mode = 2
+text = "EXIT SANDBOX"
+
+[node name="DebugOutput" type="TextEdit" parent="UI/HSplitContainer/Container2/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+placeholder_text = "Debug Output"
+editable = false
+
+[node name="FileDialog" type="FileDialog" parent="UI/HSplitContainer/Container2/VBoxContainer"]
+access = 2
+
+[node name="SettingsPopup" type="PopupPanel" parent="UI"]
+transparent_bg = false
+size = Vector2i(234, 225)
+script = ExtResource("4_17a3a")
+cb_interpreter_debug_path = NodePath("MarginContainer/VBoxContainer/cb_interpreter_debug")
+cb_sensor_debug_path = NodePath("MarginContainer/VBoxContainer/cb_sensor_debug")
+cb_print_parse_tree_path = NodePath("MarginContainer/VBoxContainer/cb_print_parse_tree")
+btn_ok_path = NodePath("MarginContainer/VBoxContainer/HBoxContainer/btn_ok")
+btn_cancel_path = NodePath("MarginContainer/VBoxContainer/HBoxContainer/btn_cancel")
+slider_mouse_speed_path = NodePath("MarginContainer/VBoxContainer/HBoxContainer2/slider_mouse_speed")
+lbl_speed_value_path = NodePath("MarginContainer/VBoxContainer/HBoxContainer2/lbl_speed_value")
+
+[node name="MarginContainer" type="MarginContainer" parent="UI/SettingsPopup"]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 230.0
+offset_bottom = 221.0
+
+[node name="ColorRect" type="ColorRect" parent="UI/SettingsPopup/MarginContainer"]
+layout_mode = 2
+color = Color(0.479183, 0.479183, 0.479183, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/SettingsPopup/MarginContainer"]
+layout_mode = 2
+
+[node name="lbl_mouse_settings" type="Label" parent="UI/SettingsPopup/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "MOUSE SETTINGS"
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="UI/SettingsPopup/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="lbl_mouse_speed" type="Label" parent="UI/SettingsPopup/MarginContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+text = "Mouse Speed:"
+
+[node name="slider_mouse_speed" type="HSlider" parent="UI/SettingsPopup/MarginContainer/VBoxContainer/HBoxContainer2"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+max_value = 10.0
+
+[node name="lbl_speed_value" type="Label" parent="UI/SettingsPopup/MarginContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+text = "5"
+
+[node name="lbl_debug_settings" type="Label" parent="UI/SettingsPopup/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "DEBUG SETTINGS"
+
+[node name="cb_interpreter_debug" type="CheckBox" parent="UI/SettingsPopup/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Interpreter Debug"
+
+[node name="cb_sensor_debug" type="CheckBox" parent="UI/SettingsPopup/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Sensor Debug"
+
+[node name="cb_print_parse_tree" type="CheckBox" parent="UI/SettingsPopup/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Print Parse Tree"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UI/SettingsPopup/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="btn_ok" type="Button" parent="UI/SettingsPopup/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Confirm"
+
+[node name="btn_cancel" type="Button" parent="UI/SettingsPopup/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Cancel"
+
+[node name="NewMazeDialog" type="AcceptDialog" parent="UI"]
+title = "Maze Size"
+initial_position = 1
+size = Vector2i(158, 123)
+
+[node name="ColorRect2" type="ColorRect" parent="UI/NewMazeDialog"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 150.0
+offset_bottom = 74.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+color = Color(0.479183, 0.479183, 0.479183, 1)
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="UI/NewMazeDialog"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 150.0
+offset_bottom = 74.0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UI/NewMazeDialog/VBoxContainer2"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="UI/NewMazeDialog/VBoxContainer2/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 6
+text = "Width"
+
+[node name="SpinBoxWidth" type="SpinBox" parent="UI/NewMazeDialog/VBoxContainer2/HBoxContainer"]
+layout_mode = 2
+min_value = 5.0
+max_value = 30.0
+value = 10.0
+rounded = true
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="UI/NewMazeDialog/VBoxContainer2"]
+layout_mode = 2
+
+[node name="Label2" type="Label" parent="UI/NewMazeDialog/VBoxContainer2/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 6
+text = "Height"
+
+[node name="SpinBoxHeight" type="SpinBox" parent="UI/NewMazeDialog/VBoxContainer2/HBoxContainer2"]
+layout_mode = 2
+min_value = 5.0
+max_value = 30.0
+value = 10.0
+rounded = true
+
+[node name="WinPopup" type="PopupPanel" parent="UI"]
+auto_translate_mode = 1
+title = "Congratulations Level Complete"
+initial_position = 1
+size = Vector2i(600, 150)
+
+[node name="Control" type="Control" parent="UI/WinPopup"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 596.0
+offset_bottom = 146.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ColorRect2" type="ColorRect" parent="UI/WinPopup/Control"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.479183, 0.479183, 0.479183, 1)
+
+[node name="CenterContainer" type="CenterContainer" parent="UI/WinPopup/Control"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/WinPopup/Control/CenterContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="UI/WinPopup/Control/CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme = SubResource("Theme_16ffl")
+text = "Congratulations Level Complete"
+horizontal_alignment = 1
+
+[node name="CenterContainer" type="CenterContainer" parent="UI/WinPopup/Control/CenterContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UI/WinPopup/Control/CenterContainer/VBoxContainer/CenterContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="UI/WinPopup/Control/CenterContainer/VBoxContainer/CenterContainer/HBoxContainer"]
+layout_mode = 2
+text = "Your code solved the maze in:"
+
+[node name="time" type="Label" parent="UI/WinPopup/Control/CenterContainer/VBoxContainer/CenterContainer/HBoxContainer"]
+layout_mode = 2
+text = "place_holder"
+script = ExtResource("5_tpt06")
+
+[node name="CenterContainer2" type="CenterContainer" parent="UI/WinPopup/Control/CenterContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UI/WinPopup/Control/CenterContainer/VBoxContainer/CenterContainer2"]
+layout_mode = 2
+
+[node name="close_button" type="Button" parent="UI/WinPopup/Control/CenterContainer/VBoxContainer/CenterContainer2/HBoxContainer"]
+layout_mode = 2
+text = "Close Popup"
+
+[node name="back_button" type="Button" parent="UI/WinPopup/Control/CenterContainer/VBoxContainer/CenterContainer2/HBoxContainer"]
+layout_mode = 2
+text = "Back to Main Menu"
+
+[connection signal="body_entered" from="UI/HSplitContainer/Container/Maze/Goal" to="UI/HSplitContainer/Container2/VBoxContainer" method="_on_Goal_body_entered"]

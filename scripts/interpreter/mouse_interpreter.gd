@@ -32,7 +32,7 @@ func stop():
 	emit_signal("line_changed", -1)
 	emit_signal("finished")
 
-func run_script(script_text: String, mouse_ref: Node):#
+func run_script(script_text: String, mouse_ref: Node, time_holder: Node):#
 	mouse = mouse_ref
 	stop_flag = false
 	command_queue = Parser.parse_script(script_text)
@@ -46,6 +46,7 @@ func run_script(script_text: String, mouse_ref: Node):#
 	var my_token := _run_id
 	running = true
 	stop_flag = false
+	time_holder.start()
 	await _run_command_list(command_queue, my_token)
 	stop()
 	emit_signal("finished")

@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://bis0q868fj4dq" path="res://resources/logo.png" id="1_l6cm7"]
 [ext_resource type="Script" uid="uid://c2h2g3o2aollm" path="res://scripts/UI/main_menu.gd" id="2_ekxnf"]
-[ext_resource type="VideoStream" path="res://resources/output.ogv" id="3_bqqt6"]
+[ext_resource type="VideoStream" uid="uid://b6aekvr37mfvt" path="res://resources/output.ogv" id="3_bqqt6"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_ekxnf"]
 font_size = 48
@@ -56,6 +56,8 @@ layout_mode = 2
 layout_mode = 2
 script = ExtResource("2_ekxnf")
 sandbox_button_path = NodePath("Sandbox")
+campaign_button_path = NodePath("Campaign")
+quit_button_path = NodePath("Button")
 
 [node name="Label" type="Label" parent="CanvasLayer/HSplitContainer/Control/VSplitContainer/CenterContainer/VBoxContainer"]
 layout_mode = 2
