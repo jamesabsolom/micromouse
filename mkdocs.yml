@@ -3,12 +3,24 @@ docs_dir: site
 
 nav:
   - Home: index.md
+  - Installation: installation.md
   - Getting Started: getting-started.md
   - Commands:
       - Movement: commands/movement.md
       - Loop : commands/loop.md
       - Repeat: commands/repeat.md
-      - Break: commands/break.md
+      - While: commands/while.md
+      - If: commands/if.md
+      - For: commands/for.md
+  - Variables:
+      - Integer: variables/integer.md
+      - Float: variables/float.md
+      - String: variables/string.md
+      - Vector: variables/vector.md
+      - List: variables/list.md
+  - Examples:
+      - Example 1: examples/example1.md
+      - Example 2: examples/example2.md
 
 theme:
   name: material
